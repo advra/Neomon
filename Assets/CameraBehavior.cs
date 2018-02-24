@@ -7,6 +7,8 @@ public class CameraBehavior : MonoBehaviour {
     public Animator cameraAnimator;
     public GameObject leftSprite;
     public GameObject rightSprite;
+    public Camera cam;
+
     SpriteRenderer leftSpriteRender;
     SpriteRenderer rightSpriteRender;
     float animationSpeed = 1.0f;
@@ -23,6 +25,9 @@ public class CameraBehavior : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+
+        cam = GetComponent<Camera>();
+
         //get transform of objects
         leftObjectStart = new Vector3(0, 0, 13);
         rightObjectStart = new Vector3(0, 0, 13);
@@ -65,6 +70,8 @@ public class CameraBehavior : MonoBehaviour {
         //check if End position is met and End loop
         if ((leftSprite.transform.localPosition == leftObjectEnd) && (rightSprite.transform.localPosition == rightObjectEnd))
         {
+            leftSpriteRender.enabled = false;
+            rightSpriteRender.enabled = false;
             cameraAnimator.SetBool("cameraFocus", false);
         }
     }
@@ -80,7 +87,7 @@ public class CameraBehavior : MonoBehaviour {
 
     void introMovement()
     {
-
+        
     }
 
 }
