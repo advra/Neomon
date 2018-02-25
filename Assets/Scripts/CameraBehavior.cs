@@ -11,7 +11,7 @@ public class CameraBehavior : MonoBehaviour {
 
     SpriteRenderer leftSpriteRender;
     SpriteRenderer rightSpriteRender;
-    float animationSpeed = 1.0f;
+    float animationSpeed = 1.0f;    //ideal is 3
     float t;
     float travelDistance = 20.0f;
     Vector3 leftCurrentPosition;    //Upated in Main Loop
@@ -29,10 +29,12 @@ public class CameraBehavior : MonoBehaviour {
         cam = GetComponent<Camera>();
 
         //get transform of objects
-        leftObjectStart = new Vector3(0, 0, 13);
-        rightObjectStart = new Vector3(0, 0, 13);
-        leftObjectEnd = new Vector3(leftObjectStart.x - travelDistance, leftObjectStart.y, leftObjectStart.z);
-        rightObjectEnd = new Vector3(leftObjectStart.x + travelDistance, leftObjectStart.y, leftObjectStart.z);
+        leftObjectStart = new Vector3(20, 0, 13);
+        rightObjectStart = new Vector3(-20, 0, 13);
+        leftObjectEnd = new Vector3(-20, 0, 13);
+        rightObjectEnd = new Vector3(20, 0, 13);
+        //leftObjectEnd = new Vector3(leftObjectStart.x - travelDistance, leftObjectStart.y, leftObjectStart.z);
+        //rightObjectEnd = new Vector3(leftObjectStart.x + travelDistance, leftObjectStart.y, leftObjectStart.z);
 
         //Get render components of both objects for flicker() method
         leftSpriteRender = leftSprite.GetComponent<SpriteRenderer>();
@@ -66,12 +68,11 @@ public class CameraBehavior : MonoBehaviour {
         t += Time.deltaTime / animationSpeed;
         leftSprite.transform.localPosition = Vector3.Lerp(leftObjectStart, leftObjectEnd, t);
         rightSprite.transform.localPosition = Vector3.Lerp(rightObjectStart, rightObjectEnd, t);
-
         //check if End position is met and End loop
         if ((leftSprite.transform.localPosition == leftObjectEnd) && (rightSprite.transform.localPosition == rightObjectEnd))
         {
-            leftSpriteRender.enabled = false;
-            rightSpriteRender.enabled = false;
+            //leftSpriteRender.enabled = false;
+            //rightSpriteRender.enabled = false;
             cameraAnimator.SetBool("cameraFocus", false);
         }
     }

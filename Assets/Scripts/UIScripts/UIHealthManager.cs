@@ -6,8 +6,6 @@ using UnityEngine.UI;
 public class UIHealthManager : MonoBehaviour {
 
     Monster Monster;
-    SpawnPlayer SpawnPlayer;
-    SpawnEnemy SpawnEnemy;
 
     //get our components
     [SerializeField]
@@ -99,26 +97,10 @@ public class UIHealthManager : MonoBehaviour {
         coolingDown = true;
     }
 
-    // Use this for initialization
-    void Start () {
+    void Awake ()
+    {
+
         
-
-        //get the corresponding monsters HP from the corroect monster class
-        if (isPlayerHP)
-        {
-            SetHealth(10);
-            Debug.Log("Player hp is: " + SpawnPlayer.GetMonster.Health);
-        }
-        else if (isEnemyHP)
-        {
-            SetHealth(SpawnEnemy.GetMonster.Health);
-            Debug.Log("Enemy hp is: " + SpawnEnemy.GetMonster.Health);
-        }
-        else
-        {
-            Debug.Log("The HP Bar is not explicitly set to Player's or Monster's");
-        }
-
 
         text = GetComponentInChildren<Text>();
         if (text == null)
@@ -127,8 +109,35 @@ public class UIHealthManager : MonoBehaviour {
         if (image == null)
             Debug.Log("HP Image component cannot be null");
 
+
+    }
+
+    // Use this for initialization
+    void Start () {
+
+        ////get the corresponding monsters HP from the corroect monster class
+        //if (isPlayerHP)
+        //{
+        //    SetHealth(10);
+        //    Debug.Log("Player hp is: " + SpawnPlayer.GetMonster.Health);
+        //}
+        //else if (isEnemyHP)
+        //{
+        //    SetHealth(SpawnEnemy.GetMonster.Health);
+        //    Debug.Log("Enemy hp is: " + SpawnEnemy.GetMonster.Health);
+        //}
+        //else
+        //{
+        //    Debug.Log("The HP Bar is not explicitly set to Player's or Monster's");
+        //}
+
+
+
         //We will use this for setting the health until our Monster class is finished to call this method
-        //SetHealth(1000, 630);
+
+
+        //SetHealth();
+        SetHealth(1000, 630);
 
         text.text = "HP " + Health + " / " + MaxHealth;
         

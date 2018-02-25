@@ -5,125 +5,106 @@ using UnityEngine;
 
 public class Monster
 {
+    private string name;
+    private int level;
+    private int maxHealth;
+    private int currentHealth;
+    private int speed;
+    private int attack;
+    private int defense;
+    private MonsterInfo monsterInfo;
 
-    private int monID = 0;
-    private string monName;
-    private int monLevel;
-    private int monMaxHealth;
-    private int monCurrentHealth;
-    private int monSpeed;
-    private int monAttack;
-    private int monDefense;
-    private string monSpriteFile;
-
-    public int ID
+    public string Print
     {
-        get { return monID; }
-        set { monID = value; }
+        get { return "Spawned: " + this.name + " Lv. " + this.level + " HP:" + currentHealth + "/" + maxHealth; }
     }
 
-    public string Info
+    // you'll find that you can't access Monster.SpriteFile anymore
+    // instead, you would use Monster.MonsterInfo.SpriteFile
+    // the same goes for Monster.MonsterInfo.Id
+    public MonsterInfo MonsterInfo
     {
-        get
-        {
-            return "Spawned a " + this.Name + " lv. " + this.Level + " (HP:" + this.Health + ")";
-
-        }
+        get { return monsterInfo; }
     }
 
     public string Name
     {
-        get { return monName; }
+        get { return name; }
+        set { name = value; }
     }
 
     public int Level
     {
-        get { return monLevel; }
-        set { monLevel = value; }
+        get { return level; }
     }
-
 
     public int Health
     {
-        get { return monCurrentHealth; }
-        set { monCurrentHealth = value; }
+        get { return currentHealth; }
+        set { currentHealth = value; }
     }
 
     public int Speed
     {
-        get { return monSpeed; }
-        set { monSpeed = value; }
+        get { return speed; }
+        set { speed = value; }
     }
 
     public int Attack
     {
-        get { return monAttack; }
-        set { monAttack = value; }
+        get { return attack; }
+        set { attack = value; }
     }
 
     public int Defense
     {
-        get { return monDefense; }
-        set { monDefense = value;  }
-    }
-
-    public string SpriteFile
-    {
-        get { return monSpriteFile; }
+        get { return defense; }
+        set { defense = value; }
     }
 
     public void SetHealth(int h)
     {
-        this.monCurrentHealth = h;
+        this.currentHealth = h;
     }
 
     public void RemoveHealth(int h)
     {
-        this.monCurrentHealth -= h;
-        if (this.monCurrentHealth < 0)
+        this.currentHealth -= h;
+        if (this.currentHealth < 0)
         {
-            this.monCurrentHealth = 0;
+            this.currentHealth = 0;
         }
     }
 
-    //Increase Base attributes by x amount depending on level and other factors
-    //will revisit this method for game balancing
-    public void LevelMultiplier(int level)
+    // In your previous code, setting level wouldn't immediately affect the monster's stats
+    public void LevelUp()
     {
-        this.monMaxHealth *= level;
-        this.monAttack *= level;
-        this.monSpeed *= level;
-        this.monDefense *= level;
+        level += 1;
+        ResetMonsterStats();
     }
 
-
-    public void SetBaseAttributes(int maxHealth, int speed, int attack, int defense)
+    public void ResetMonsterStats()
     {
-        if (maxHealth <= 0)
-        {
-            //The lowest health allowed is 1
-            this.monMaxHealth = 1;        
-            this.monCurrentHealth = 1;
-        }
-
-        this.monMaxHealth = maxHealth;
-        this.monCurrentHealth = maxHealth;
-        this.monSpeed = speed;
-        this.monAttack = attack;
-        this.monDefense = defense;
-
+        // Multiply base attributes by x amount depending on level and other factors
+        // will revisit this method for game balancing
+        this.maxHealth = monsterInfo.BaseHealth * level;
+        this.currentHealth = monsterInfo.BaseHealth * level;
+        this.speed = monsterInfo.BaseSpeed * level;
+        this.attack = monsterInfo.BaseAttack * level;
+        this.defense = monsterInfo.BaseDefense * level;
     }
 
-    //Create a monster checking Strings are Arropriate before assigning it to an actual Game Object
-    public Monster (string name, string fileName)
+    // each monster is constructed from a monster info and a level.
+    // this way you can have as many of the same monster as you want.
+    public Monster(MonsterInfo monsterInfo, int level)
     {
-        this.monName = name;
-        this.monSpriteFile = fileName;
-        this.monLevel = 1;
+        this.monsterInfo = monsterInfo;
+        this.level = level;
+
+        // the default monster name is the type from MonsterInfo.
+        this.name = monsterInfo.Type;
+
+        ResetMonsterStats();
     }
 
 }
-
-
-
-
