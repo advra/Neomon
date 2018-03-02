@@ -7,6 +7,12 @@ TagManager:
   - EnemyHealth
   - Green
   - Canvas
+  - PlayerPos
+  - EnemyPosA
+  - EnemyPosB
+  - EnemyPosC
+  - CardCanvas
+  - Card
   layers:
   - Default
   - TransparentFX

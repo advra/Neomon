@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class Monster
 {
+    private MonsterInfo monsterInfo;
     private string name;
     private int level;
     private int maxHealth;
@@ -12,8 +13,9 @@ public class Monster
     private int speed;
     private int attack;
     private int defense;
-    private MonsterInfo monsterInfo;
-
+    private bool dead;
+    private int exp;
+    
     public string Print
     {
         get { return "Spawned: " + this.name + " Lv. " + this.level + " HP:" + currentHealth + "/" + maxHealth; }
@@ -40,8 +42,21 @@ public class Monster
 
     public int Health
     {
-        get { return currentHealth; }
+        get
+        {
+            if(currentHealth <= 0)
+            {
+                dead = true;
+                return 0;
+            }
+            return currentHealth;
+        }
         set { currentHealth = value; }
+    }
+
+    public int MaxHealth
+    {
+        get { return maxHealth; }
     }
 
     public int Speed
@@ -62,19 +77,32 @@ public class Monster
         set { defense = value; }
     }
 
+    public bool IsDead
+    {
+        get { return dead;  }
+    }
+
     public void SetHealth(int h)
     {
         this.currentHealth = h;
     }
 
-    public void RemoveHealth(int h)
+    public void ChangeHealth(int h)
     {
-        this.currentHealth -= h;
+        this.currentHealth += h;
         if (this.currentHealth < 0)
         {
             this.currentHealth = 0;
+            this.dead = true;
         }
     }
+
+    public float DoAttack(float currentSpeed, float attackCost)
+    {
+        return currentSpeed - attackCost;
+    }
+
+
 
     // In your previous code, setting level wouldn't immediately affect the monster's stats
     public void LevelUp()

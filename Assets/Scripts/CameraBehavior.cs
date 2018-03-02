@@ -4,10 +4,13 @@ using UnityEngine;
 
 public class CameraBehavior : MonoBehaviour {
 
+    BattleController battleController;
+
     public Animator cameraAnimator;
     public GameObject leftSprite;
     public GameObject rightSprite;
     public Camera cam;
+    public bool cameraIntroIsDone;
 
     SpriteRenderer leftSpriteRender;
     SpriteRenderer rightSpriteRender;
@@ -27,6 +30,7 @@ public class CameraBehavior : MonoBehaviour {
     void Start () {
 
         cam = GetComponent<Camera>();
+        battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
 
         //get transform of objects
         leftObjectStart = new Vector3(20, 0, 13);
@@ -74,6 +78,8 @@ public class CameraBehavior : MonoBehaviour {
             //leftSpriteRender.enabled = false;
             //rightSpriteRender.enabled = false;
             cameraAnimator.SetBool("cameraFocus", false);
+            cameraIntroIsDone = true;
+            battleController.IsBattling = true;
         }
     }
 
