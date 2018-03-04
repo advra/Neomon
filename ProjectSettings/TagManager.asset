@@ -13,6 +13,8 @@ TagManager:
   - EnemyPosC
   - CardCanvas
   - Card
+  - Hand
+  - Enemy
   layers:
   - Default
   - TransparentFX

@@ -15,16 +15,18 @@ public class PlayerHandController : MonoBehaviour {
     public List<Card> graveyard;
 
     public List<GameObject> cardInHands;
-    public int numberOfCards = 0;
+    //public int numberOfCards = 0; //in the hand
 
     //used to cap amount of cards we can have in our hands
     //set to -1 for not limit
-    public int maxHand = 4;
-    public float cardGap = 1.0f;
+    public int maxHand;
+    public float cardGap;
     //this is for debugging
     public int deckLength = 0;
     public int handLength = 0;
     public int graveyardLength = 0;
+    public int cardsInHandLength = 0;
+    
     public List<int> numbers = new List<int> { 1, 2, 3, 4, 5, 6, 7 };
 
     public void Shuffle(List<int> ints)
@@ -51,16 +53,42 @@ public class PlayerHandController : MonoBehaviour {
         }
     }
 
-    //here we will evenly space
-    public void FitCard(GameObject card)
-    {
-        if (hand.Count == 0)
-            return;
-
-        GameObject parentCard = cardInHands[0];
-        card.transform.position = parentCard.transform.position;
-        card.transform.position += new Vector3(this.transform.position.x, (numberOfCards * cardGap), this.transform.position.z);
+    //graphicaly space out cards
+    //Compute the card gap between each cards (from the origin) by how many cards are on screen
+    //more = less gap = more overlapping!
+    public float GetCardGap(){
+        int cards = cardInHands.Count;
+        if(cards < 5){
+            return 265.0f;
+        }
+        else if(cards > 4){
+            return (-26.2f * cards) + 391.81f;
+        }
+        else if (cards > 9)
+        {
+            return 45.0f;
+        }
+        else
+        {
+            return 45.0f;
+        }
     }
+
+    public void FitCardAtIndex(GameObject card, int i)
+    {
+        card.transform.localPosition = new Vector3((i * GetCardGap()),100, 0);
+        card.GetComponent<CardController>().OriginalPosition = card.transform.localPosition;
+    }
+    public void FitAllCards()
+    {
+        for(int i = 0; i < cardInHands.Count; i++)
+        {
+            GameObject card = cardInHands[i];
+            card.transform.localPosition = new Vector3((i * GetCardGap()),100, 0);
+            card.GetComponent<CardController>().OriginalPosition = card.transform.localPosition;
+        }
+    }
+    
 
     //Draws One card from Deck to Hand 
     //Can be changed for more draws later
@@ -71,25 +99,25 @@ public class PlayerHandController : MonoBehaviour {
             //draw as normal
             if (deck.Count != 0)
             {
-                //add the card to our hand from the deck 
+                //add the card from our Deck to our Hand
                 hand.Add(deck[0]);
-
                 //create object and copy attributes
-                GameObject card = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
-                CardController cardController = card.GetComponent<CardController>();
+                GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
+                //set this to tag with hand
+                cardObj.transform.SetParent(this.transform);
+                CardController cardController = cardObj.GetComponent<CardController>();
                 cardController.cardName = deck[0].Name;
                 cardController.cardSprite = deck[0].Sprite;
-                Image cardImage = card.GetComponent<Image>();
+                Image cardImage = cardObj.GetComponent<Image>();
                 cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
-
                 //visually format image
-                cardInHands.Add(card);
-                FitCard(card);
-                numberOfCards = handLength;
-
-
-                //then remove it
+                cardInHands.Add(cardObj);
+                cardController.HandIndex = cardsInHandLength;
+                FitAllCards();
+                //FitCardAtIndex(cardObj, cardController.HandIndex);
+                //cardController.OriginalPosition = cardObj.transform.localPosition;
                 deck.Remove(deck[0]);
+                FitAllCards();
             }
             //if deck is 0 then
             else
@@ -125,6 +153,7 @@ public class PlayerHandController : MonoBehaviour {
         {
             targetPile.Add(hand[0]);
             hand.Remove(hand[0]);
+            GameObject.Destroy(cardInHands[0]);
         }
         else
         {
@@ -133,18 +162,53 @@ public class PlayerHandController : MonoBehaviour {
         updateCount();
     }
 
+        public void PlaceCardIn(GameObject thisCard, List<Card> targetPile)
+    {
+        if(hand.Count != 0)
+        {
+            int index = thisCard.GetComponent<CardController>().HandIndex;
+            Debug.Log("Hand index is: " + index);
+            targetPile.Add(hand[index]);
+            hand.Remove(hand[index]);
+            //we HAVE to remove the gameobject from the List first before destroying it
+            cardInHands.Remove(thisCard);
+            GameObject.Destroy(thisCard);
+            //Recompute Indexes
+            updateCount();
+            RecomputeHandIndexes();
+            //Update hand Graphics
+            FitAllCards();
+        }
+        else
+        {
+            Debug.Log("Hand has zero cards to put into target pile!");
+        }
+        //updateCount();
+    }
+
+    //loses reference
+    public void RecomputeHandIndexes(){
+        for(int i = 0; i < cardsInHandLength; i++)
+        {
+            cardInHands[i].GetComponent<CardController>().HandIndex = i;
+            //FitCard(cardInHands[i]);
+        }
+    }
+
     public void updateCount()
     {
         deckLength = deck.Count;
         handLength = hand.Count;
         graveyardLength = graveyard.Count;
+        cardsInHandLength = cardInHands.Count;
     }
 
+    //For "Play" button
     public void Test()
     {
         Draw();
     }
-
+    //For "Draw" button
     public void Test2()
     {
         PlaceCardIn(graveyard);
@@ -173,10 +237,4 @@ public class PlayerHandController : MonoBehaviour {
     {
         Draw();
     }
-
-    void Update()
-    {
-        
-    }
-
 }

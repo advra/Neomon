@@ -20,7 +20,9 @@ public class MonsterController : MonoBehaviour
     public GameObject HealthBarPrefab;
     private RuntimeAnimatorController animator;
     private SpriteRenderer spriteRenderer;
-
+    private BoxCollider2D boxCollider2D;
+    //use this to check if targeted then change color
+    public bool targeted;
 
     void Awake ()
     {
@@ -28,9 +30,9 @@ public class MonsterController : MonoBehaviour
         animator = GetComponent<RuntimeAnimatorController>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         if (animator == null)
-            Debug.Log("Monster animator is null");
+            Debug.Log(this.gameObject + " monster animator is null");
         if (spriteRenderer == null)
-            Debug.Log("Monster sprite renderer is null");
+            Debug.Log(this.gameObject + " monster sprite renderer is null");
         if (!MonsterInfoDatabase.IsPopulated)
              MonsterInfoDatabase.Populate();
         //create Canvas on top with animated HP bar
@@ -39,12 +41,20 @@ public class MonsterController : MonoBehaviour
         //playerCanvas.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
     }
 
+    public void IsTarget(bool value){
+        if(value){
+            StartCoroutine(FlashSprite());
+        }else{
+            StopCoroutine(FlashSprite());
+        }
+    }
+
     void CheckAttack()
     {
         if(speed > battleController.Threshold)
         {
             battleController.IsPaused = true;
-            Debug.Log("Speed at:" + speed);
+            Debug.Log(this.gameObject + " Speed at:" + speed);
         }
     }
 
@@ -67,6 +77,14 @@ public class MonsterController : MonoBehaviour
             spriteFile = monster.MonsterInfo.SpriteFile;
         }
         spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/" + spriteFile);
+
+        //We add box collider later because it inherits the sprites dimensions otherwise 
+        //the box collider would not generate the appropriate size for the monster
+        gameObject.AddComponent<BoxCollider2D>();
+        boxCollider2D = GetComponent<BoxCollider2D>();
+        if(boxCollider2D == null){
+            Debug.Log(this.gameObject + " does not have a BoxCollider2d");
+        }
         currentHealth = monster.Health;
         maxHealth = monster.MaxHealth;
         baseSpeed = monster.Speed;
@@ -98,6 +116,21 @@ public class MonsterController : MonoBehaviour
         {
             //do attack stuff here
         }
+    }
+
+    private IEnumerator FlashSprite()
+    {
+        //1,1,1 to 255,80,80
+        float duration = 1f;
+
+        while(duration > 0)
+        {
+            duration -= Time.deltaTime;
+            spriteRenderer.color = new Color(1, 1, 1, duration);
+            return null;
+        }
+
+        return null;
     }
 
     // Update is called once per frame

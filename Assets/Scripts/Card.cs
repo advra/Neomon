@@ -7,13 +7,17 @@ public class Card {
     private string name;
     private string description;
     private string sprite;
-    private TypeOfCard CardType;
+    private int cardType;
 
-    enum TypeOfCard
-    {
-        attack = 0,
-        defense = 1
-    }
+    /*Target Area of Card:
+        o   single                          default
+        v   Split
+        l   line                            penetrating enemies standing in front of another
+        a   all enemies                     
+        s   self                            Good for self buff cards
+        ?   random enemy
+    */
+    private char targetArea; 
 
     public string Name {
         get{ return name;}
