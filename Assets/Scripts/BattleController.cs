@@ -4,9 +4,12 @@ using UnityEngine;
 
 public class BattleController : MonoBehaviour {
     MonsterController monsterController;
+    GaugeTickController gaugeTickController;
+
     public MonsterController monsterControllerA;
     public MonsterController monsterControllerB;
     public MonsterController monsterControllerC;
+    //public MonsterController monsterControllerD; //soon to add (will have Boss chance as well)
     public MonsterController monsterControllerPlayer;
     //reference player
     public GameObject player;
@@ -14,7 +17,9 @@ public class BattleController : MonoBehaviour {
     public GameObject enemyA;
     public GameObject enemyB;
     public GameObject enemyC;
-    int numberOfEnemies;
+    public GameObject tickPrefab;
+
+    public int numberOfEnemies;
     
     float tick = 0.05f;
     public bool isBattling;
@@ -49,9 +54,14 @@ public class BattleController : MonoBehaviour {
 
     // Use this for initialization
     void Awake () {
-
+        if(tickPrefab == null)
+        {
+            tickPrefab = Resources.Load<GameObject>("TickPrefab");
+        }
         //setup player components
-        monsterControllerPlayer = player.GetComponent<MonsterController>();
+        //monsterControllerPlayer = player.GetComponent<MonsterController>();
+        GameObject tickObj = Instantiate(tickPrefab, this.transform);
+        tickObj.GetComponent<GaugeTickController>().TrackedMonster = player;
 
         //Now setup enemy components
         //determine number of enemies
@@ -84,6 +94,16 @@ public class BattleController : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Instantiate a tick for Player, enemyA, enemyB or enemyC.
+    /// </summary>
+    /// <param name="mon"></param>
+    //void InstantiateTick(GameObject monsterToTrack)
+    //{
+    //    GameObject obj = GameObject.Instantiate(tickPrefab);
+    //    obj.GetComponent<GaugeTickController>().TrackedMonster = monsterToTrack;
+    //}
+
     //void OnTick(tick)
     //{
     //    if(tick = next)
@@ -98,34 +118,34 @@ public class BattleController : MonoBehaviour {
     //    FindNextTurn = ciel(500/speed) + remainder
     //}
 
-    void IncreaseSpeed(MonsterController monsterController)
-    {
-        monsterController.speed = monsterController.speed + (monsterController.baseSpeed * tick);
-    }
+    //void IncreaseSpeed(MonsterController monsterController)
+    //{
+    //    monsterController.speed = monsterController.speed + (monsterController.baseSpeed * tick);
+    //}
 
-    void Update()
-    {
-        //increment speed value every tick
-        //when over 500 it is unit's turn
-        if (isBattling && !paused)
-        {
-            //count speed for each monster to determine who goes first
-            IncreaseSpeed(monsterControllerPlayer);
-            if (numberOfEnemies == 1)
-            {
-                IncreaseSpeed(monsterControllerB);
-            }
-            else if(numberOfEnemies == 2)
-            {
-                IncreaseSpeed(monsterControllerB);
-                IncreaseSpeed(monsterControllerC);
-            }
-            else
-            {
-                IncreaseSpeed(monsterControllerA);
-                IncreaseSpeed(monsterControllerB);
-                IncreaseSpeed(monsterControllerC);
-            }
-        }
-    }
+    //void Update()
+    //{
+    //    //increment speed value every tick
+    //    //when over 500 it is unit's turn
+    //    if (isBattling && !paused)
+    //    {
+    //        //count speed for each monster to determine who goes first
+    //        IncreaseSpeed(monsterControllerPlayer);
+    //        if (numberOfEnemies == 1)
+    //        {
+    //            IncreaseSpeed(monsterControllerB);
+    //        }
+    //        else if(numberOfEnemies == 2)
+    //        {
+    //            IncreaseSpeed(monsterControllerB);
+    //            IncreaseSpeed(monsterControllerC);
+    //        }
+    //        else
+    //        {
+    //            IncreaseSpeed(monsterControllerA);
+    //            IncreaseSpeed(monsterControllerB);
+    //            IncreaseSpeed(monsterControllerC);
+    //        }
+    //    }
+    //}
 }

@@ -22,12 +22,12 @@ GameObject:
   - component: {fileID: 222002594934716030}
   - component: {fileID: 114358765736856040}
   - component: {fileID: 114396008811297616}
-  - component: {fileID: 114629964640777556}
   - component: {fileID: 114317336630309662}
+  - component: {fileID: 114887260218056474}
   - component: {fileID: 223246902410259532}
   - component: {fileID: 114888660031292424}
   m_Layer: 0
-  m_Name: CardButton
+  m_Name: CardPrefab
   m_TagString: Card
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -125,7 +125,7 @@ MonoBehaviour:
         m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
---- !u!114 &114629964640777556
+--- !u!114 &114887260218056474
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -133,12 +133,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1469433355771344}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8333716d1b52d4d8cace0f843f691b78, type: 3}
+  m_Script: {fileID: 11500000, guid: 2aa8d53fd11f32446ab914826255ac2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cardName: 
   cardSprite: 
+  damageAmount: 0
+  targetArea: 0
+  handIndex: 0
   originalPosition: {x: 0, y: 0, z: 0}
+  BattleTextPrefab: {fileID: 0}
+  selectedTarget: {fileID: 0}
 --- !u!114 &114888660031292424
 MonoBehaviour:
   m_ObjectHideFlags: 1

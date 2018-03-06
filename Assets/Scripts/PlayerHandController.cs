@@ -13,20 +13,26 @@ public class PlayerHandController : MonoBehaviour {
     public List<Card> deck;
     public List<Card> hand;
     public List<Card> graveyard;
-
     public List<GameObject> cardInHands;
-    //public int numberOfCards = 0; //in the hand
+
+    //for UserInterface references especially in CardController
+    //Used for spawning BattleTexts
+    public GameObject parentCanvas;
+    public GameObject playerReference;
+    public GameObject enemyReferenceA;
+    public GameObject enemyReferenceB;
+    public GameObject enemyReferenceC;
 
     //used to cap amount of cards we can have in our hands
     //set to -1 for not limit
-    public int maxHand;
+    public int maxHand = 6;
     public float cardGap;
     //this is for debugging
     public int deckLength = 0;
     public int handLength = 0;
     public int graveyardLength = 0;
     public int cardsInHandLength = 0;
-    
+
     public List<int> numbers = new List<int> { 1, 2, 3, 4, 5, 6, 7 };
 
     public void Shuffle(List<int> ints)
@@ -56,12 +62,12 @@ public class PlayerHandController : MonoBehaviour {
     //graphicaly space out cards
     //Compute the card gap between each cards (from the origin) by how many cards are on screen
     //more = less gap = more overlapping!
-    public float GetCardGap(){
+    public float GetCardGap() {
         int cards = cardInHands.Count;
-        if(cards < 5){
+        if (cards < 5) {
             return 265.0f;
         }
-        else if(cards > 4){
+        else if (cards > 4) {
             return (-26.2f * cards) + 391.81f;
         }
         else if (cards > 9)
@@ -76,19 +82,19 @@ public class PlayerHandController : MonoBehaviour {
 
     public void FitCardAtIndex(GameObject card, int i)
     {
-        card.transform.localPosition = new Vector3((i * GetCardGap()),100, 0);
+        card.transform.localPosition = new Vector3((i * GetCardGap()), 100, 0);
         card.GetComponent<CardController>().OriginalPosition = card.transform.localPosition;
     }
+
     public void FitAllCards()
     {
-        for(int i = 0; i < cardInHands.Count; i++)
+        for (int i = 0; i < cardInHands.Count; i++)
         {
             GameObject card = cardInHands[i];
-            card.transform.localPosition = new Vector3((i * GetCardGap()),100, 0);
+            card.transform.localPosition = new Vector3((i * GetCardGap()), 100, 0);
             card.GetComponent<CardController>().OriginalPosition = card.transform.localPosition;
         }
     }
-    
 
     //Draws One card from Deck to Hand 
     //Can be changed for more draws later
@@ -99,7 +105,7 @@ public class PlayerHandController : MonoBehaviour {
             //draw as normal
             if (deck.Count != 0)
             {
-                //add the card from our Deck to our Hand
+                //Get the card data from our Deck then pass its attributes to our GameObject in the Hand 
                 hand.Add(deck[0]);
                 //create object and copy attributes
                 GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
@@ -108,6 +114,8 @@ public class PlayerHandController : MonoBehaviour {
                 CardController cardController = cardObj.GetComponent<CardController>();
                 cardController.cardName = deck[0].Name;
                 cardController.cardSprite = deck[0].Sprite;
+                cardController.damageAmount = deck[0].Damage;
+                cardController.targetArea = deck[0].TargetArea;
                 Image cardImage = cardObj.GetComponent<Image>();
                 cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
                 //visually format image
@@ -129,6 +137,7 @@ public class PlayerHandController : MonoBehaviour {
                     deck = graveyard;
                     graveyard = new List<Card>();   //use this instead of .Clear
                     Shuffle(deck);
+                    Draw(); //Need to double Draw otherwise cards will shuffle but not draw this turn
                     Debug.Log("Shuffled cards from graveyard back to the deck");
                 }
                 //otherwise do nothing
@@ -166,13 +175,15 @@ public class PlayerHandController : MonoBehaviour {
     {
         if(hand.Count != 0)
         {
-            int index = thisCard.GetComponent<CardController>().HandIndex;
+            CardController cardController = thisCard.GetComponent<CardController>();
+            int index = cardController.HandIndex;
             Debug.Log("Hand index is: " + index);
             targetPile.Add(hand[index]);
             hand.Remove(hand[index]);
-            //we HAVE to remove the gameobject from the List first before destroying it
+            //we MUST remove the gameobject from the List BEFORE destroying it
             cardInHands.Remove(thisCard);
-            GameObject.Destroy(thisCard);
+            //Note: Can potentially insert some card destroy animation when used here
+            StartCoroutine(TimedDeath(thisCard));
             //Recompute Indexes
             updateCount();
             RecomputeHandIndexes();
@@ -191,7 +202,6 @@ public class PlayerHandController : MonoBehaviour {
         for(int i = 0; i < cardsInHandLength; i++)
         {
             cardInHands[i].GetComponent<CardController>().HandIndex = i;
-            //FitCard(cardInHands[i]);
         }
     }
 
@@ -214,22 +224,51 @@ public class PlayerHandController : MonoBehaviour {
         PlaceCardIn(graveyard);
     }
 
+    //use this to destroy game object delayed by couple seconds to prevent crashing?
+    IEnumerator TimedDeath(GameObject obj)
+    {
+        yield return new WaitForSeconds(1);
+        GameObject.Destroy(obj);
+    }
+
     // Use this for initialization
     void Start()
     {
+        playerReference = GameObject.FindGameObjectWithTag("PlayerPos");
+        enemyReferenceA = GameObject.FindGameObjectWithTag("EnemyPosA");
+        enemyReferenceB = GameObject.FindGameObjectWithTag("EnemyPosB");
+        enemyReferenceC = GameObject.FindGameObjectWithTag("EnemyPosC");
+
+        parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
+        if(parentCanvas == null)
+        {
+            Debug.Log("Parent canvas is null! GUI Objects may not properly be attached");
+        }
+        cardPrefab = Resources.Load<GameObject>("CardPrefab");
+        if (cardPrefab == null)
+        {
+            Debug.Log("Card Prefab is Null. Cannot find it in Resources folder.");
+        }
+
         cardInHands = new List<GameObject>();
         deck = new List<Card>();
         hand = new List<Card>();
         graveyard = new List<Card>();
 
         //we can populate more in a seperate class later
-        Card attackCard = new Card("Attack", "Melee Attack a Single Enemy", "card_attack");
+        Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5");
+        Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2");
+        Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3");
 
-        //add 10 cards
-        for(int i = 0; i < 10; i++)
+        //add cards
+        for (int i = 0; i < 5; i++)
         {
-            deck.Add(attackCard);
+            deck.Add(sliceCard);
+            deck.Add(thrustCard);
         }
+        deck.Add(entangleCard);
+        Shuffle(deck);
+
         updateCount();
     }
 
