@@ -9,16 +9,16 @@ using UnityEngine.UI;
 public class MonsterController : MonoBehaviour
 {
     UserController userController;
-    public BattleController battleController;
+    public BattleController BC;
+
     public Monster monster;
-    public bool isPlayer = false;
+    public bool isPlayer;
     public bool isDead;
     public string spriteFile;
     public int currentHealth, maxHealth, attack, defense, level;
-    public float speed, nextSpeed;
-    public float baseSpeed;
+    public int currentSpeed;
+    public int baseSpeed;
     public int baseAttack, baseDefense;
-    public bool turn;
     public GameObject HealthBarPrefab;
     private RuntimeAnimatorController animator;
     private SpriteRenderer spriteRenderer;
@@ -29,7 +29,7 @@ public class MonsterController : MonoBehaviour
 
     void Awake ()
     {
-        battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
         animator = GetComponent<RuntimeAnimatorController>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         if (animator == null)
@@ -51,6 +51,18 @@ public class MonsterController : MonoBehaviour
         //playerCanvas.GetComponent<HealthController>().referenceMonster = this.gameObject;
         //playerCanvas.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
     }
+
+    public int CurrentSpeed
+    {
+        get { return this.currentSpeed; }
+        set { this.currentSpeed = value;  }
+    }
+
+    //public int BaseSpeed
+    //{
+    //    get { return baseSpeed; }
+    //    set { this.baseSpeed = value; }
+    //}
 
     public bool IsTargeted
     {
@@ -89,13 +101,31 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    public void PlayTurn()
+    {
+        if (isPlayer)
+        {
+            //GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>().Draw();
+            Debug.Log("Player turn: " + gameObject);
+        }
+        else
+        {
+            Debug.Log("Enemy turn" + gameObject);
+        }
+    }
+
     void CheckAttack()
     {
-        if(speed > battleController.Threshold)
+        if(currentSpeed > BC.Threshold)
         {
-            battleController.IsPaused = true;
-            Debug.Log(this.gameObject + " Speed at:" + speed);
+            BC.IsPaused = true;
+            Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
         }
+    }
+
+    public void ResetTurn(int threshold)
+    {
+        currentSpeed -= threshold;
     }
 
     // Use this for initialization
@@ -115,7 +145,7 @@ public class MonsterController : MonoBehaviour
         {
             //for now we will just a random selection within our database
             //We can expand on this later
-            int randomIndex = Random.Range(0, 3);   //returns 0 - 1
+            int randomIndex = Random.Range(0, MonsterInfoDatabase.monsters.Count);   //returns 0 - 1
             monster = MonsterInfoDatabase.monsters[randomIndex];
             spriteFile = monster.MonsterInfo.SpriteFile;
         }
@@ -131,6 +161,9 @@ public class MonsterController : MonoBehaviour
         currentHealth = monster.Health;
         maxHealth = monster.MaxHealth;
         baseSpeed = monster.Speed;
+
+        //battleController.speedTable.Add(baseSpeed);
+        //currentSpeed = 0.1f;
         //FindNextTurn();
         Debug.Log(monster.Print);
     }
@@ -185,7 +218,7 @@ public class MonsterController : MonoBehaviour
     // Update is called once per frame
     void Update () {
         //simulate poison (for testing the hp)
-        if (battleController.IsBattling & !battleController.IsPaused)
+        if (BC.IsBattling & !BC.IsPaused)
         {
             CheckAttack();
 

@@ -3,19 +3,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Threading;
 
 [System.Serializable]
 public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
-    PlayerHandController playerHandController;
+
+    public enum State
+    {
+        NORMAL,
+        DRAG,
+        RESET,
+        DESTROY
+    }
+
     BattleController battleController;
+    PlayerHandController playerHandController;
+    PlayerController playerController;
+
     //not to be confused with the Hand Canvas
     Canvas canvas;
     Image cardImage;
     Card card;
+
+    public GameObject PlayerHand;
+
     public string cardName;
     public string cardSprite;
     public int damageAmount;
+    public int cost;
+    public float chargeTime;
     public TargetArea targetArea;
+    public State state; 
     [SerializeField]
     private int handIndex;
     [SerializeField]
@@ -26,7 +44,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     Ray ray;
     Ray screenRay;
     public GameObject selectedTarget;
-    
+    [SerializeField]
+    bool resetDisplay;
 
     public Vector3 OriginalPosition{
         get{return originalPosition;}
@@ -53,7 +72,15 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             Debug.Log("playerHandController is null");
         }
         battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
-
+        if (battleController == null)
+        {
+            Debug.Log("battleController is null");
+        }
+        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+        if (playerController == null)
+        {
+            Debug.Log("playerController is null");
+        }
         //Greater is in front. 10 to ensure it is in front of all other GUI.
         canvas.sortingOrder = 10;
     }
@@ -67,8 +94,19 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
     }
 
+    void OnMouseEnter()
+    {
+        
+    }
+
+    void OnMouseOver()
+    {
+        cardImage.material.color = Color.red;
+    }
+
     public void OnDrag(PointerEventData eventData)
     {
+        state = State.DRAG;
         canvas.overrideSorting = true;
         //cardImage.material = Resources.Load<Material>("OutlinedDiffuse");
         transform.position = Input.mousePosition;
@@ -76,21 +114,22 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         //Debug.Log("Distance factor: " + distanceFactor);
         RescaleCard(distanceFactor);
         VaryTranspaency(distanceFactor);
-        //Visual feedback if player drags card on top a monster
-        //GameObject monster = ValidTargetDraggedOn();
-        //if (IsTargetValid())
-        //{
-        //    monster.GetComponent<MonsterController>().IsTargeted = true;
-        //}
+        
     }
-
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (!playerHandController.PlayerHasEnoughCharges(cost))
+        {
+            state = State.RESET;
+            return;
+        }
+
         //If Card dropped over 1 monster
         //Careful: Special case where user cursor drags and drops a card above a monster
-        if (IsTargetValid())
+        if (IsValidTarget())
         {
+            playerHandController.AdjustCost(cost);
             HideCard();
             //this will destroy the card
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
@@ -109,35 +148,78 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         //Check and apply any AoE cards if user drags and drops a card in the battlefield 
         else if (targetArea != TargetArea.single)
         {
+            if ((Input.mousePosition.y > Screen.height * 0.45f) )
             {
-            
-                if (Input.mousePosition.y > Screen.height * 0.45f)
+                //Debug.Log("Played above the hand");
+                //Applies card effects within battlefield bounds
+                //This does not handle single target cards, check above if statements
+                playerHandController.AdjustCost(cost);
+                HideCard();
+                playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
+                DetermineTargets();
+            }
+            else
+            {
+                if (state == State.DRAG || state == State.NORMAL)
                 {
-                    //Debug.Log("Played above the hand");
-                    //Applies card effects within battlefield bounds
-                    //This does not handle single target cards, check above if statements
-                    HideCard();
-                    playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-                    DetermineTargets();
+                    state = State.RESET;
                 }
-                else
-                {
-                    ResetCardDisplay();
-                }
+                
             }
         }
         else
         {
-            ResetCardDisplay();
+            if (state == State.DRAG || state == State.NORMAL)
+            {
+                state = State.RESET;
+            }
         }
+    }
+
+    private void AnimatePos(Vector3 start, Vector3 end, float speed)
+    {
+        float startTime = Time.time;
+        float distance = Vector3.Distance(start, end);
+        Debug.Log(distance);
+
+        float distCovered = (Time.time - startTime) * speed;
+        float fracJourney = distCovered / distance;
+        transform.localPosition = Vector3.Lerp(start, end, fracJourney);
+    }
+
+    void FixedUpdate()
+    {
+        //Some weird bug when dragging and droping really quickly occurs
+        switch (state)
+        {
+            case State.NORMAL:
+            case State.RESET:
+                StartCoroutine(AnimateForTime(0.5f));
+                transform.localPosition = Vector2.Lerp(transform.localPosition, originalPosition, Time.deltaTime * 20);
+                ResetCardDisplay();
+                break;
+            //remove this card
+            case State.DESTROY:
+
+                break;
+        }
+
+    }
+
+    IEnumerator AnimateForTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+        if(state == State.RESET && state != State.DRAG)
+            state = State.NORMAL;
     }
 
     void ResetCardDisplay()
     {
         //reset card properties back to hand
         canvas.overrideSorting = false;
-        transform.localPosition = originalPosition;
-        this.transform.localScale = new Vector3(1, 1, 1);
+        //removed because we use lerp instead
+        //transform.localPosition = originalPosition;
+        transform.localScale = new Vector3(1, 1, 1);
         ResetTransparency();
     }
 
@@ -149,7 +231,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             //float slope = 0.002f;
             //y = mx + b
             float newScale = (-0.0013f * distance) + 1.0f;
-            Debug.Log("Scaling to " + newScale + " with distance: " + distance);
+            //Debug.Log("Scaling to " + newScale + " with distance: " + distance);
             transform.localScale = new Vector3 (newScale, newScale, 0);
         }
     }
@@ -165,7 +247,6 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             ResetTransparency();
         }
-        
 
     }
 
@@ -193,7 +274,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
     }
 
-    public bool IsTargetValid()
+    //checks if hits a monster
+    public bool IsValidTarget()
     {
         hitInfo = new RaycastHit();
         screenRay = Camera.main.ScreenPointToRay(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0.0f));
@@ -250,16 +332,30 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     //Called when a card is dragged on top of an enemy
     public void SingleTargetAttack()
     {
-        SpawnBattleText();
+        state = State.DESTROY;
         GameObject targetedMonster = ValidTargetDraggedOn();
-        targetedMonster.GetComponent<MonsterController>().Damage(damageAmount);
-        Debug.Log("Targeted Monster is: " + targetedMonster);
+        HandleTurn turn = new HandleTurn(battleController.player, targetedMonster, targetArea, damageAmount, chargeTime);
+        battleController.AddTurnToQueue(turn);
+
+        //Begin charging
+        playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+        playerController.chargeDuration = chargeTime;
+        PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+        playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
+
+        //////////////////////////////////////////////////////////////////////////
+        //SpawnBattleText();
+        //GameObject targetedMonster = ValidTargetDraggedOn();
+        //targetedMonster.GetComponent<MonsterController>().Damage(damageAmount);
+        //Debug.Log("Targeted Monster is: " + targetedMonster);
     }
 
     //Called when a card is dropped on the battlefield
     //Works for all except for single target cards. Call SingleTargetAttack() instead
     public void DetermineTargets()
     {
+        state = State.DESTROY;
+
         if (targetArea == TargetArea.all)
         {
             //If the enemy did not spawn this battle do nothing
@@ -346,51 +442,5 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             Debug.Log("DetermineTargets() Error, target type not found for type: " + targetArea);
         }
     }
-
-
-    //public void OnEndDrag(PointerEventData eventData)
-    //{
-    //    //If Card dropped over 1 monster
-    //    //Careful: Special case where user cursor drags and drops a card above a monster
-    //    if (IsTargetValid())
-    //    {
-    //        HideCard();
-    //        //this will destroy the card
-    //        playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-    //        //if a single target card then apply to one monster
-    //        if (targetArea == TargetArea.single)
-    //        {
-    //            SingleTargetAttack();
-    //        }
-    //        //Otherwise determine which target the card applies to
-    //        else
-    //        {
-    //            DetermineTargets();
-    //        }
-    //    }
-    //    //if mouse not hovering above a monster check for battlefield
-    //    else
-    //    {
-    //        //Check and apply any AoE cards if user drags and drops a card in the battlefield 
-    //        if (targetArea != TargetArea.single)
-    //        {
-    //            if (Input.mousePosition.y > Screen.height * 0.45f)
-    //            {
-    //                //Debug.Log("Played above the hand");
-    //                //Applies card effects within battlefield bounds
-    //                //This does not handle single target cards, check above if statements
-    //                //Computation too long to hide card
-    //                //HideCard();
-    //                playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-    //                DetermineTargets();
-    //            }
-    //        }
-    //        //reset card properties back to hand
-    //        canvas.overrideSorting = false;
-    //        transform.localPosition = originalPosition;
-    //        this.transform.localScale = new Vector3(1, 1, 1);
-    //        ResetTransparency();
-    //    }
-    //}
 
 }

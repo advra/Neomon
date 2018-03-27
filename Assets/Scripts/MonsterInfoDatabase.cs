@@ -9,7 +9,7 @@ public static class MonsterInfoDatabase
 
     //this will store all the monsters we generate
     //Remember, arrays are mutable and need to be resized if needed
-    public static Monster[] monsters = new Monster[10];
+    public static List<Monster> monsters = new List<Monster>();
 
     private static int index = 0;
     private static bool populated = false;
@@ -25,18 +25,20 @@ public static class MonsterInfoDatabase
         //Here we create a monster defining its name, file and stats
         // (int id, string type, string spriteFile, int base HP, Speed, Attack, Defense) int level                                
         Monster squid = new Monster(new MonsterInfo(1, "Squidra", "mon_squid", 15, 5, 3, 4), 1);
-        //Monster squid = new Monster("Squidra", "mon_squid");
-        monsters[0] = squid;
+        monsters.Add(squid);
 
         Monster toxicMushroom = new Monster(new MonsterInfo(1, "Toxic Mushroom", "mon_toxicmush", 25, 6, 2, 5), 1);
-        //Monster toxicMushroom = new Monster("Toxic Mushroom", "mon_toxicmush");
-        //toxicMushroom.SetBaseAttributes(25, 6, 2, 5);
-        monsters[1] = toxicMushroom;
+        monsters.Add(toxicMushroom);
 
         Monster kidMushroom = new Monster(new MonsterInfo(1, "Mush-Kid", "mon_kidmush", 10, 7, 3, 3), 1);
-        //Monster toxicMushroom = new Monster("Toxic Mushroom", "mon_toxicmush");
-        //toxicMushroom.SetBaseAttributes(25, 6, 2, 5);
-        monsters[2] = kidMushroom;
+        monsters.Add(kidMushroom);
+
+        Monster flameWick = new Monster(new MonsterInfo(1, "Flamed Wick", "mon_wick", 20, 5, 5, 5), 1);
+        monsters.Add(flameWick);
+
+        Debug.Log("Length of MonsterDatabaseInfo[] is " + monsters.Count);
+
+        populated = true;
     }
 
     //using the populated table as reference, spawn them then add them

@@ -92,9 +92,9 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_NormalColor: {r: 0.9191176, g: 0.9123594, b: 0.9123594, a: 1}
+    m_HighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+    m_PressedColor: {r: 0.75, g: 0.7444853, b: 0.7444853, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
@@ -136,14 +136,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2aa8d53fd11f32446ab914826255ac2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PlayerHand: {fileID: 0}
   cardName: 
   cardSprite: 
   damageAmount: 0
+  cost: 0
   targetArea: 0
+  state: 0
   handIndex: 0
   originalPosition: {x: 0, y: 0, z: 0}
   BattleTextPrefab: {fileID: 0}
   selectedTarget: {fileID: 0}
+  resetDisplay: 0
 --- !u!114 &114888660031292424
 MonoBehaviour:
   m_ObjectHideFlags: 1

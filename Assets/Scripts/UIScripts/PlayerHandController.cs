@@ -6,25 +6,39 @@ using UnityEngine.UI;
 public class PlayerHandController : MonoBehaviour {
     CardDatabase cardDatabase;
     Card card;
+    PlayerController playerController;
+    BattleController battleController;
+
     public GameObject cardPrefab;
     public bool playerTurn;
-    public bool draw;
+    public bool isDrawing;
+    public bool initialDraw;
 
     public List<Card> deck;
     public List<Card> hand;
     public List<Card> graveyard;
     public List<GameObject> cardInHands;
+    //the number of cards you can play this turn depending on its cost
+    [SerializeField]
+    private int cardCharge;
+    [SerializeField]
+    private int maxCardCharge;
+    private int cardChargeLimit = 4;
+
+    //the number of charges added per turn
+    public int gainChargePerTurn = 1;
 
     //for UserInterface references especially in CardController
     //Used for spawning BattleTexts
     public GameObject parentCanvas;
+    public GameObject UIChargeText;
     public GameObject playerReference;
     public GameObject enemyReferenceA;
     public GameObject enemyReferenceB;
     public GameObject enemyReferenceC;
 
     //used to cap amount of cards we can have in our hands
-    //set to -1 for not limit
+    //set to -1 for no limit
     public int maxHand = 6;
     public float cardGap;
     //this is for debugging
@@ -33,7 +47,12 @@ public class PlayerHandController : MonoBehaviour {
     public int graveyardLength = 0;
     public int cardsInHandLength = 0;
 
-    public List<int> numbers = new List<int> { 1, 2, 3, 4, 5, 6, 7 };
+    private ChargeText chargeText;
+
+    public int CardCharge
+    {
+        get { return cardCharge;  }
+    }
 
     public void Shuffle(List<int> ints)
     {
@@ -98,60 +117,68 @@ public class PlayerHandController : MonoBehaviour {
 
     //Draws One card from Deck to Hand 
     //Can be changed for more draws later
-    public void Draw()
+    public void Draw(int number)
     {
-        if(hand.Count != maxHand)
+        for(int i = 0; i < number; i++)
         {
-            //draw as normal
-            if (deck.Count != 0)
+            if (hand.Count != maxHand)
             {
-                //Get the card data from our Deck then pass its attributes to our GameObject in the Hand 
-                hand.Add(deck[0]);
-                //create object and copy attributes
-                GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
-                //set this to tag with hand
-                cardObj.transform.SetParent(this.transform);
-                CardController cardController = cardObj.GetComponent<CardController>();
-                cardController.cardName = deck[0].Name;
-                cardController.cardSprite = deck[0].Sprite;
-                cardController.damageAmount = deck[0].Damage;
-                cardController.targetArea = deck[0].TargetArea;
-                Image cardImage = cardObj.GetComponent<Image>();
-                cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
-                //visually format image
-                cardInHands.Add(cardObj);
-                cardController.HandIndex = cardsInHandLength;
-                FitAllCards();
-                //FitCardAtIndex(cardObj, cardController.HandIndex);
-                //cardController.OriginalPosition = cardObj.transform.localPosition;
-                deck.Remove(deck[0]);
-                FitAllCards();
-            }
-            //if deck is 0 then
-            else
-            {
-                //check graveyard
-                if (graveyard.Count != 0)
+                initialDraw = true;
+                //draw as normal
+                if (deck.Count != 0)
                 {
-                    //shuffle cards from graveyard to the deck
-                    deck = graveyard;
-                    graveyard = new List<Card>();   //use this instead of .Clear
-                    Shuffle(deck);
-                    Draw(); //Need to double Draw otherwise cards will shuffle but not draw this turn
-                    Debug.Log("Shuffled cards from graveyard back to the deck");
+                    //Get the card data from our Deck then pass its attributes to our GameObject in the Hand 
+                    hand.Add(deck[0]);
+                    //create object and copy attributes
+                    GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
+                                                                                               //set this to tag with hand
+                    cardObj.transform.SetParent(this.transform);
+                    //Apply the card attributes we need on the GameObject
+                    CardController cardController = cardObj.GetComponent<CardController>();
+                    cardController.cardName = deck[0].Name;
+                    cardController.cardSprite = deck[0].Sprite;
+                    cardController.damageAmount = deck[0].Damage;
+                    cardController.targetArea = deck[0].TargetArea;
+                    cardController.cost = deck[0].Cost;
+                    cardController.chargeTime = deck[0].ChargeTime;
+                    cardController.PlayerHand = this.gameObject;
+                    Image cardImage = cardObj.GetComponent<Image>();
+                    cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
+                    //visually format image
+                    cardInHands.Add(cardObj);
+                    cardController.HandIndex = cardsInHandLength;
+                    FitAllCards();
+                    deck.Remove(deck[0]);
+                    FitAllCards();
                 }
-                //otherwise do nothing
+                //if deck is 0 then
                 else
                 {
-                    Debug.Log("Nothing left in Graveyard to shuffle back into the deck");
+                    //check graveyard
+                    if (graveyard.Count != 0)
+                    {
+                        //shuffle cards from graveyard to the deck
+                        deck = graveyard;
+                        graveyard = new List<Card>();   //use this instead of .Clear
+                        Shuffle(deck);
+                        Draw(1); //Need to double Draw otherwise cards will shuffle but not draw this turn
+                        Debug.Log("Shuffled cards from graveyard back to the deck");
+                    }
+                    //otherwise do nothing
+                    else
+                    {
+                        Debug.Log("Nothing left in Graveyard to shuffle back into the deck");
+                    }
                 }
             }
+            else
+            {
+                Debug.Log("Cannot draw anymore cards! Max hand limit is reached");
+            }
+            updateCount();
         }
-        else
-        {
-            Debug.Log("Cannot draw anymore cards! Max hand limit is reached");
-        }
-        updateCount();
+
+        
     }
 
     //called when card is used
@@ -216,7 +243,7 @@ public class PlayerHandController : MonoBehaviour {
     //For "Play" button
     public void Test()
     {
-        Draw();
+        Draw(1);
     }
     //For "Draw" button
     public void Test2()
@@ -231,13 +258,23 @@ public class PlayerHandController : MonoBehaviour {
         GameObject.Destroy(obj);
     }
 
-    // Use this for initialization
-    void Start()
+    void Awake()
     {
         playerReference = GameObject.FindGameObjectWithTag("PlayerPos");
         enemyReferenceA = GameObject.FindGameObjectWithTag("EnemyPosA");
         enemyReferenceB = GameObject.FindGameObjectWithTag("EnemyPosB");
         enemyReferenceC = GameObject.FindGameObjectWithTag("EnemyPosC");
+        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+        chargeText = UIChargeText.GetComponent<ChargeText>();
+    }
+
+    // Use this for initialization
+    void Start()
+    {
+        if (playerController == null)
+        {
+            Debug.Log("playerController for HandController is null");
+        }
 
         parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
         if(parentCanvas == null)
@@ -256,9 +293,9 @@ public class PlayerHandController : MonoBehaviour {
         graveyard = new List<Card>();
 
         //we can populate more in a seperate class later
-        Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5");
-        Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2");
-        Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3");
+        Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5",1, 1f);
+        Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2",1,1f);
+        Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3",2,1f);
 
         //add cards
         for (int i = 0; i < 5; i++)
@@ -272,8 +309,57 @@ public class PlayerHandController : MonoBehaviour {
         updateCount();
     }
 
-    void SetupHand()
+    //user clicks this to end their turn
+    public void EndTurn()
     {
-        Draw();
+        playerController.ResetAttack();
+    }
+
+    public bool PlayerHasEnoughCharges(int cost)
+    {
+        if (cost <= cardCharge)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public void AdjustCost(int i)
+    {
+        cardCharge -= i;
+        if (cardCharge < 0)
+            cardCharge = 0;
+        chargeText.UpdateCount(cardCharge, maxCardCharge);
+    }
+
+    void IncrementCostBy(int i)
+    {
+        cardCharge += i;
+        maxCardCharge += i;
+        if(maxCardCharge > cardChargeLimit)
+        {
+            maxCardCharge = cardChargeLimit;
+        }
+        chargeText.UpdateCount(cardCharge, maxCardCharge);
+    }
+
+    //draw cards for first time then 1 card each turn after
+    public void SetupHand()
+    {
+        if (!initialDraw)
+        {
+            Draw(3);
+            cardCharge = 1;
+            maxCardCharge = 1;
+            chargeText.UpdateCount(cardCharge, maxCardCharge);
+        }
+        else
+        {
+            Draw(1);
+            IncrementCostBy(1);
+        }
     }
 }

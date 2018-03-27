@@ -17,6 +17,8 @@ TagManager:
   - Enemy
   - Battlefield
   - TickWindow
+  - EndTurnButton
+  - PlayerTick
   layers:
   - Default
   - TransparentFX
@@ -56,6 +58,9 @@ TagManager:
     locked: 0
   - name: Background
     uniqueID: 3299622083
+    locked: 0
+  - name: Monsters
+    uniqueID: 2741471289
     locked: 0
   - name: Foreground
     uniqueID: 519947437
