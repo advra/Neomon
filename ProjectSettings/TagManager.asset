@@ -8,9 +8,6 @@ TagManager:
   - Green
   - Canvas
   - PlayerPos
-  - EnemyPosA
-  - EnemyPosB
-  - EnemyPosC
   - CardCanvas
   - Card
   - Hand
@@ -19,6 +16,7 @@ TagManager:
   - TickWindow
   - EndTurnButton
   - PlayerTick
+  - TickIcon
   layers:
   - Default
   - TransparentFX

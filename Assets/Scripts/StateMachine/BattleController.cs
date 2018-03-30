@@ -27,6 +27,7 @@ public class BattleController : MonoBehaviour {
     public GameObject enemyC;
     public GameObject tickPrefab;
     public GameObject playerTickPrefab;
+    public GameObject enemyTickPrefab;
     public GameObject playerHand;
     public RectTransform canvasRect;
     public GameObject BattleTextPrefab;
@@ -49,6 +50,7 @@ public class BattleController : MonoBehaviour {
         EXECUTEACTION       //wait until action is completed
     }
 
+    //used to normalize threshold based upon their speeds
     public void ThresholdUpdate(float value)
     {
         if(value > threshold)
@@ -79,6 +81,15 @@ public class BattleController : MonoBehaviour {
         set { paused = value;  }
     }
 
+    public void PauseSpeedsForEnemies(bool value)
+    {
+        //pause increment of all other monsters
+        foreach (GameObject monster in EnemiesInBattle)
+        {
+            monster.GetComponent<MonsterController>().pause = value;
+        }
+    }
+
     void CreateProgressTickFor(GameObject monster)
     {
         if (monster == player)
@@ -89,10 +100,12 @@ public class BattleController : MonoBehaviour {
         }
         else
         {
-            GameObject tickObj = Instantiate(tickPrefab, this.transform);
-            GaugeTickController gaugeScript = tickObj.GetComponent<GaugeTickController>();
-            
-            gaugeScript.TrackedMonster = monster;
+            GameObject tickObj = Instantiate(enemyTickPrefab, this.transform);
+            EnemyTickController enemyTickController = tickObj.GetComponent<EnemyTickController>();
+            enemyTickController.TrackedMonster = monster;
+            //add tick object to our monster controller so we can reference it in the future
+            MonsterController monsterController = monster.GetComponent<MonsterController>();
+            monsterController.trackingTickObject = tickObj;
         }
     }
 
@@ -104,7 +117,9 @@ public class BattleController : MonoBehaviour {
             tickPrefab = Resources.Load<GameObject>("TickPrefab");
         if (playerTickPrefab == null)
             playerTickPrefab = Resources.Load<GameObject>("PlayerTickPrefab");
-        if(BattleTextPrefab == null)
+        if (enemyTickPrefab == null)
+            enemyTickPrefab = Resources.Load<GameObject>("EnemyTickPrefab");
+        if (BattleTextPrefab == null)
             BattleTextPrefab = Resources.Load<GameObject>("DamageText");
         if (playerHand == null)
         {
@@ -128,25 +143,22 @@ public class BattleController : MonoBehaviour {
         playerController = player.GetComponent<PlayerController>();
         FriendliesInBattle.Add(player);
 
-        //Now setup enemy components
-        //determine number of enemies
-        //this can be changed later to be more dynamic
-        //numberOfEnemies = Random.Range(0,3)+1; //returns 1-3 enemies
+        //Now setup enemy components and determine number of enemies
         numberOfEnemies = Random.Range(0, 3);
+        //numberOfEnemies = 1;
         if (numberOfEnemies == 1)
         {
             enemyA.SetActive(false);
             enemyC.SetActive(false);
-            //get the stats of the active monster
-            //CreateProgressTickFor(enemyB);
+            CreateProgressTickFor(enemyB);
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             EnemiesInBattle.Add(enemyB);
         }
         else if(numberOfEnemies == 2)
         {
             enemyA.SetActive(false);
-            //CreateProgressTickFor(enemyB);
-            //CreateProgressTickFor(enemyC);
+            CreateProgressTickFor(enemyB);
+            CreateProgressTickFor(enemyC);
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             monsterControllerC = enemyC.GetComponent<MonsterController>();
             EnemiesInBattle.Add(enemyB);
@@ -154,9 +166,9 @@ public class BattleController : MonoBehaviour {
         }
         else
         {
-            //CreateProgressTickFor(enemyA);
-            //CreateProgressTickFor(enemyB);
-            //CreateProgressTickFor(enemyC);
+            CreateProgressTickFor(enemyA);
+            CreateProgressTickFor(enemyB);
+            CreateProgressTickFor(enemyC);
             monsterControllerA = enemyA.GetComponent<MonsterController>();
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             monsterControllerC = enemyC.GetComponent<MonsterController>();
@@ -195,15 +207,19 @@ public class BattleController : MonoBehaviour {
 
     public void ExecuteTurnFor(GameObject monster)
     {
-        if(turnList[0].owner == monster)
+        SpawnBattleTextAbove(turnList[0].target);
+        //send damageto targeted GO controller & Reset monsters speed / charge stats 
+        if(monster == player)
         {
-            SpawnBattleTextAbove(turnList[0].target);
-            //send damageto targeted GO controller 
             turnList[0].target.GetComponent<MonsterController>().Damage(turnList[0].damage);
-            //reset player controller info
-            playerController.ResetAttack();
-            turnList.Remove(turnList[0]);
+            //playerController.ResetAttack();
         }
+        else
+        {
+            turnList[0].target.GetComponent<PlayerController>().Damage(turnList[0].damage);
+            //monster.GetComponent<MonsterController>().ResetAttack();
+        }
+        turnList.RemoveAt(0);
     }
 
     void SpawnBattleTextAbove(GameObject monster)

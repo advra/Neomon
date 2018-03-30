@@ -7,7 +7,7 @@ public class PlayerHandController : MonoBehaviour {
     CardDatabase cardDatabase;
     Card card;
     PlayerController playerController;
-    BattleController battleController;
+    BattleController BC;
 
     public GameObject cardPrefab;
     public bool playerTurn;
@@ -260,10 +260,6 @@ public class PlayerHandController : MonoBehaviour {
 
     void Awake()
     {
-        playerReference = GameObject.FindGameObjectWithTag("PlayerPos");
-        enemyReferenceA = GameObject.FindGameObjectWithTag("EnemyPosA");
-        enemyReferenceB = GameObject.FindGameObjectWithTag("EnemyPosB");
-        enemyReferenceC = GameObject.FindGameObjectWithTag("EnemyPosC");
         playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
         chargeText = UIChargeText.GetComponent<ChargeText>();
     }
@@ -275,9 +271,12 @@ public class PlayerHandController : MonoBehaviour {
         {
             Debug.Log("playerController for HandController is null");
         }
-
+        if (BC == null)
+        {
+            BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        }
         parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
-        if(parentCanvas == null)
+        if (parentCanvas == null)
         {
             Debug.Log("Parent canvas is null! GUI Objects may not properly be attached");
         }
@@ -312,7 +311,10 @@ public class PlayerHandController : MonoBehaviour {
     //user clicks this to end their turn
     public void EndTurn()
     {
+        BC.PauseSpeedsForEnemies(false);
         playerController.ResetAttack();
+        //PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+        //playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
     }
 
     public bool PlayerHasEnoughCharges(int cost)

@@ -68,7 +68,62 @@ public class PlayerTickController : MonoBehaviour
         done = true;
         idlePercentage = 0;
         chargePercentage = 0;
+        //state = GaugeState.INCREASING;
         ChangeState(GaugeState.INCREASING);
+    }
+
+    public void ReadyUp()
+    {
+        playerController.currentUserState = PlayerController.PlayerState.READY;
+        //state = GaugeState.INCREASING;
+    }
+
+    public void ChangeState(GaugeState state)
+    {
+        done = false;
+        this.state = state;
+    }
+
+    public void ComputeCharge()
+    {
+        chargePercentage = (playerController.chargeTimer / playerController.chargeDuration) * 100f;
+        //update position over time
+        if (chargePercentage <= 100.0f)
+        {
+            float perIncrement = rangeChargeBound / 100.0f;
+            positionX = 100.0f + chargePercentage * perIncrement;
+            transform.localPosition = new Vector2(positionX, positionY);
+        }
+        //if value is over then execute
+        else
+        {
+            //insert pause here in the future to allow for things like animation etc.
+            //execute event in queue
+            if (BC.turnList[0].owner == BC.player)
+            {
+                //BC.ExecuteTurnFor(trackedMonster);
+                done = true;
+                ChangeState(GaugeState.RESET);
+            }
+        }
+    }
+
+    void ComputeIdle()
+    {
+        //get percentage total assuming our threshold is 100
+        idlePercentage = (playerController.currentSpeed / BC.threshold) * 100f;
+        //if we are not ready (at 100%) then keep incrementing position of tick
+        if (idlePercentage <= 100.0f)
+        {
+            //apply percentage in relation to the area of interest (our wait area from -250 to 250)
+            positionX = windowMinBound + idlePercentage * (rangeWaitBound / 100.0f);
+            transform.localPosition = new Vector2(positionX, positionY);
+        }
+        else
+        {
+            state = GaugeState.STOP;
+            return;
+        }
     }
 
     void Awake()
@@ -84,15 +139,13 @@ public class PlayerTickController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        if (playerController == null)
+            Debug.Log("playerController for Tick GUI is null");
         differenceBound = windowMaxBound - windowMinBound;
         rangeWaitBound = 100.0f - windowMinBound;
         rangeChargeBound = windowMaxBound - 100.0f;
         playerController = trackedMonster.GetComponent<PlayerController>();
         positionY = transform.localPosition.y;
-        if (playerController == null)
-        {
-            Debug.Log("playerController for Tick GUI is null");
-        }
     }
 
     // Update is called once per frame
@@ -117,66 +170,10 @@ public class PlayerTickController : MonoBehaviour
                     break;
                 //once we hit max point reset 
                 case (GaugeState.RESET):
+                    Reset();
                     break;
             }
         }
-    }
-
-    public void ChangeState(GaugeState state)
-    {
-        done = false;
-        this.state = state;
-    }
-
-    public void ComputeCharge()
-    {
-        chargePercentage = (playerController.chargeTimer / playerController.chargeDuration) * 100f;
-        //update position over time
-        if (chargePercentage <= 100.0f)
-        {
-            float perIncrement = rangeChargeBound / 100.0f;
-            positionX = 100.0f + chargePercentage * perIncrement;
-            transform.localPosition = new Vector2(positionX, positionY);
-        }
-        //if value is over then execute
-        else
-        {
-            //insert pause here in the future to allow for things like animation etc.
-            //execute event in queue
-            if(BC.turnList[0].owner == BC.player)
-            {
-                BC.ExecuteTurnFor(trackedMonster);
-                done = true;
-            }
-            idlePercentage = 0;
-            chargePercentage = 0;
-            ChangeState(GaugeState.INCREASING);
-        }
-    }
-
-    void ComputeIdle()
-    {
-        //get percentage total assuming our threshold is 100
-        idlePercentage = (playerController.currentSpeed / BC.threshold) * 100f;
-        //if we are not ready (at 100%) then keep incrementing position of tick
-        if (idlePercentage <= 100.0f)
-        {
-            //apply percentage in relation to the area of interest (our wait area from -250 to 250)
-            positionX = windowMinBound + idlePercentage * (rangeWaitBound / 100.0f);
-            transform.localPosition = new Vector2(positionX, positionY);
-        }
-        else
-        {
-            state = GaugeState.STOP;
-            return;
-        }
-    }
-
-
-    public void ReadyUp()
-    {
-        playerController.currentUserState = PlayerController.PlayerState.READY;
-        //state = GaugeState.INCREASING;
     }
 
 }

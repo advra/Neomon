@@ -8,7 +8,7 @@ public class MenuManager : MonoBehaviour {
     // Use this for initialization
     void Start () {
 
-        Button Attack = new Button("Attack", "btn_attack");
+        //Button Attack = new Button("Attack", "btn_attack");
 
     }
 	

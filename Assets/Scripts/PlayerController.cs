@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour {
+public class PlayerController : MonoBehaviour
+{
 
     UserController userController;
     public BattleController BC;
@@ -11,7 +12,7 @@ public class PlayerController : MonoBehaviour {
 
     public bool draw;
     public PlayerState currentUserState;
-    public bool done;
+    //public bool done;
     bool count;
     public GameObject EndTurnButton;
     public EndTurnButtonController endTurnButtonScript;
@@ -51,15 +52,16 @@ public class PlayerController : MonoBehaviour {
     //at the end of every attack after executed (or canceled call this)
     public void ResetAttack()
     {
-        if(playerTickController == null)
+        Debug.Log("Resetting");
+        if (playerTickController == null)
         {
             playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
         }
-        playerTickController.Reset();
+        //playerTickController.state = PlayerTickController.GaugeState.RESET;
+        playerTickController.ChangeState(PlayerTickController.GaugeState.INCREASING);
         chargeTimer = 0.0f;
         currentSpeed = 0.0f;
         currentUserState = PlayerState.WAITING;
-        done = false;
         EndTurnButton.SetActive(false);
     }
 
@@ -82,8 +84,8 @@ public class PlayerController : MonoBehaviour {
 
     public void PlayTurn()
     {
-         //GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>().Draw();
-         Debug.Log("Player turn: " + gameObject);
+        //GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>().Draw();
+        Debug.Log("Player turn: " + gameObject);
     }
 
     void CheckAttack()
@@ -121,7 +123,7 @@ public class PlayerController : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        if(EndTurnButton == null)
+        if (EndTurnButton == null)
         {
             EndTurnButton = GameObject.FindGameObjectWithTag("EndTurnButton");
             endTurnButtonScript = EndTurnButton.GetComponent<EndTurnButtonController>();
@@ -135,8 +137,8 @@ public class PlayerController : MonoBehaviour {
         //Set to squidra for now until we expand on graphics
         monster = MonsterInfoDatabase.monsters[0];
         //We concatenate _b to refer rear sprite images
-        spriteFile = monster.MonsterInfo.SpriteFile + "_b";
-        spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/" + spriteFile);
+        spriteFile = monster.MonsterBase.spriteFile + "_b";
+        spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/mon/mon_" + spriteFile);
         //We add box collider later because it inherits the sprites dimensions otherwise 
         //the box collider would not generate the appropriate size for the monster
         gameObject.AddComponent<BoxCollider2D>();
@@ -154,13 +156,13 @@ public class PlayerController : MonoBehaviour {
 
     void IncreaseSpeed()
     {
-        if (currentSpeed >= BC.Threshold) //change back to BC.Threshold for testing
+        if (currentSpeed >= BC.Threshold) 
         {
             currentUserState = PlayerState.READY;
         }
         else
         {
-            currentSpeed += baseSpeed  * Time.deltaTime;
+            currentSpeed += baseSpeed * Time.deltaTime;
         }
     }
 
@@ -168,7 +170,13 @@ public class PlayerController : MonoBehaviour {
     {
         if (chargeTimer >= durationInSeconds) //change back to BC.Threshold for testing
         {
-            //currentUserState = PlayerState.READY;
+            //this will ensure it will not reset without trigger if it is not their turn
+            if (BC.turnList[0].owner == this.gameObject)
+            {
+                BC.ExecuteTurnFor(this.gameObject);
+                ResetAttack();
+                //currentUserState = PlayerState.WAITING;
+            }
         }
         else
         {
@@ -178,45 +186,27 @@ public class PlayerController : MonoBehaviour {
 
     void Update()
     {
-        if (!done)
+        switch (currentUserState)
         {
-            switch (currentUserState)
-            {
-                case (PlayerState.WAITING):
-                    //do nothing
-                    break;
-                case (PlayerState.READY):
-                    done = true;
-                    playerHand.SetupHand();
-                    EndTurnButton.SetActive(true);
-                    currentUserState = PlayerState.SELECTING;
-                    break;
-                case (PlayerState.SELECTING):
-                    Debug.Log("Waiting for user to select cards");
-                    break;
-                case (PlayerState.CHARGING):
-                    //send signal to tick
-                    //playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
-                    break;
-                default:
-                    break;
-            }
+            case (PlayerState.WAITING):
+                IncreaseSpeed();
+                break;
+            case (PlayerState.READY):
+                playerHand.SetupHand();
+                EndTurnButton.SetActive(true);
+                currentUserState = PlayerState.SELECTING;
+                break;
+            case (PlayerState.SELECTING):
+                //Necessary to prevent monsters from increasing their speeds when its players turn
+                BC.PauseSpeedsForEnemies(true);
+                Debug.Log("Waiting for user to select cards");
+                break;
+            case (PlayerState.CHARGING):
+                ChargeSpeed(chargeDuration);
+                break;
+            default:
+                break;
         }
-
-    }
-
-    void FixedUpdate()
-    {
-        if (currentUserState == PlayerState.WAITING)
-        {
-            IncreaseSpeed();
-        }
-        if (currentUserState == PlayerState.CHARGING)
-        {
-            //call charge top the tick
-            ChargeSpeed(chargeDuration);
-        }
-
     }
 
 }

@@ -136,11 +136,13 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             //if a single target card then apply to one monster
             if (targetArea == TargetArea.single)
             {
+                battleController.PauseSpeedsForEnemies(false);
                 SingleTargetAttack();
             }
             //Otherwise determine which target the card applies to
             else
             {
+                battleController.PauseSpeedsForEnemies(false);
                 DetermineTargets();
             }
         }
