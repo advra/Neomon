@@ -4,15 +4,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerHandController : MonoBehaviour {
-    CardDatabase cardDatabase;
     Card card;
     PlayerController playerController;
     BattleController BC;
 
     public GameObject cardPrefab;
-    public bool playerTurn;
+    public bool isPlayerTurn;
     public bool isDrawing;
     public bool initialDraw;
+
+    //contains all the cards to refer to
+    public CardDatabase cardDatabase;
 
     public List<Card> deck;
     public List<Card> hand;
@@ -135,15 +137,16 @@ public class PlayerHandController : MonoBehaviour {
                     cardObj.transform.SetParent(this.transform);
                     //Apply the card attributes we need on the GameObject
                     CardController cardController = cardObj.GetComponent<CardController>();
-                    cardController.cardName = deck[0].Name;
-                    cardController.cardSprite = deck[0].Sprite;
-                    cardController.damageAmount = deck[0].Damage;
-                    cardController.targetArea = deck[0].TargetArea;
-                    cardController.cost = deck[0].Cost;
-                    cardController.chargeTime = deck[0].ChargeTime;
+                    cardController.cardName = deck[0].name;
+                    //cardController.cardSprite = deck[0].sprite;
+                    cardController.damageAmount = deck[0].damage;
+                    cardController.targetArea = deck[0].targetArea;
+                    cardController.cost = deck[0].cost;
+                    cardController.chargeTime = deck[0].charge;
                     cardController.PlayerHand = this.gameObject;
                     Image cardImage = cardObj.GetComponent<Image>();
-                    cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
+                    //cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
+                    cardImage.sprite = deck[0].artwork;
                     //visually format image
                     cardInHands.Add(cardObj);
                     cardController.HandIndex = cardsInHandLength;
@@ -260,8 +263,20 @@ public class PlayerHandController : MonoBehaviour {
 
     void Awake()
     {
-        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
-        chargeText = UIChargeText.GetComponent<ChargeText>();
+        if(cardDatabase == null)
+        {
+            cardDatabase = Resources.Load<CardDatabase>("CardDatabase");
+        }
+
+        if (playerController == null)
+        {
+            playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+        }
+        
+        if(chargeText == null)
+        {
+            chargeText = UIChargeText.GetComponent<ChargeText>();
+        }
     }
 
     // Use this for initialization
@@ -292,9 +307,12 @@ public class PlayerHandController : MonoBehaviour {
         graveyard = new List<Card>();
 
         //we can populate more in a seperate class later
-        Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5",1, 1f);
-        Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2",1,1f);
-        Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3",2,1f);
+        //Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5",1, 1f);
+        //Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2",1,1f);
+        //Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3",2,1f);
+        Card sliceCard = cardDatabase.cards[0];
+        Card thrustCard = cardDatabase.cards[1];
+        Card entangleCard = cardDatabase.cards[2];
 
         //add cards
         for (int i = 0; i < 5; i++)
@@ -311,6 +329,7 @@ public class PlayerHandController : MonoBehaviour {
     //user clicks this to end their turn
     public void EndTurn()
     {
+        isPlayerTurn = false;
         BC.PauseSpeedsForEnemies(false);
         playerController.ResetAttack();
         //PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
@@ -351,6 +370,7 @@ public class PlayerHandController : MonoBehaviour {
     //draw cards for first time then 1 card each turn after
     public void SetupHand()
     {
+        isPlayerTurn = true;
         if (!initialDraw)
         {
             Draw(3);

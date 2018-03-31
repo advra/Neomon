@@ -101,7 +101,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     void OnMouseOver()
     {
-        cardImage.material.color = Color.red;
+
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -119,6 +119,14 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (!playerHandController.isPlayerTurn)
+        {
+            //provide player feedback it is not their turn
+            //or discard cards completely and draw a new hand every time
+            state = State.RESET;
+            return;
+        }
+
         if (!playerHandController.PlayerHasEnoughCharges(cost))
         {
             state = State.RESET;

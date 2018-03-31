@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Threading;
+using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Animator))]
 
-public class MonsterController : MonoBehaviour
+public class MonsterController : MonoBehaviour, IPointerEnterHandler
 {
+
     UserController userController;
     public BattleController BC;
     public Monster monster;
@@ -31,6 +33,7 @@ public class MonsterController : MonoBehaviour
     public bool pause;
     bool targeted;
     public bool isDead;
+    public bool isCharingToAttack;
     public string spriteFile;
     public int currentHealth, maxHealth, attack, defense, level;
     public int baseAttack, baseDefense;
@@ -49,6 +52,7 @@ public class MonsterController : MonoBehaviour
         trackingTickObject.GetComponent<EnemyTickController>().state = EnemyTickController.GaugeState.RESET;
         chargeTimer = 0.0f;
         currentSpeed = 0.0f;
+        isCharingToAttack = false;
         monsterState = State.WAITING;
         done = false;
     }
@@ -69,7 +73,6 @@ public class MonsterController : MonoBehaviour
         monsterState = state;
         done = false;
     }
-
 
     public void StartTest()
     {
@@ -195,15 +198,21 @@ public class MonsterController : MonoBehaviour
         }
         else
         {
+            isCharingToAttack = true;
             chargeTimer += Time.deltaTime;
         }
     }
 
-    //public void TimerThread()
-    //{
-    //    chargeTimer += 0.1f;
-    //    currentSpeed += baseSpeed * 0.1f;
-    //}
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        Debug.Log("Selected " + this.name + " at " + Time.time);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        Debug.Log("Exited " + this.name + " at " + Time.time);
+    }
+
 
     IEnumerator FlashInput()
     {

@@ -17,6 +17,7 @@ TagManager:
   - EndTurnButton
   - PlayerTick
   - TickIcon
+  - UIHeadReference
   layers:
   - Default
   - TransparentFX

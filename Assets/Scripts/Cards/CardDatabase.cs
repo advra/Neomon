@@ -2,13 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CardDatabase {
-    Card card;
-
-    public Card attackCard;
-
-    public void Populate()
-    {
-        attackCard = new Card("Attack", "Melee Attack a Single Enemy", "card_attack");
-    }
+[CreateAssetMenu(fileName = "New Card Database", menuName = "Game/Card Database")]
+public class CardDatabase : ScriptableObject {
+    public Card[] cards;
 }

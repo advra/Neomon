@@ -18,7 +18,7 @@ public class MonsterAqua : MonsterBase
 
         AddToMoveSet(new Attack(AttackType.SINGLE, "Liquidate", "All forms of mass compressed into the tiniest of particles", 3, 1f));
         AddToMoveSet(new Attack(AttackType.SINGLE, "Liquid Razor", "A deep incision with high pressurized water", 1, 1f));
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Hydro Cannon", "High velocity of water pressurized towards you", 2, 1f));
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Water Shuriken", "The arts of tranquil water combined the fury of the ninja", 1, 1f));
+        AddToMoveSet(new Attack(AttackType.SINGLE, "Hydro Cannon", "High velocity of water pressurized towards you", 2, 2f));
+        AddToMoveSet(new Attack(AttackType.SINGLE, "Water Shuriken", "The arts of tranquil water combined the fury of the ninja", 1, 0.75f));
     }
 }

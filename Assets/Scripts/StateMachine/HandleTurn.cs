@@ -11,6 +11,8 @@ public class HandleTurn {
     //area of effrct, single, self, all, random
     public TargetArea targetArea;
     public AttackType attackType;
+    //public string attackName;
+    //public string attackDescription;
     public int damage;
     public float chargeTime;
 

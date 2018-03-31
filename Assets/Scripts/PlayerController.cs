@@ -14,6 +14,8 @@ public class PlayerController : MonoBehaviour
     public PlayerState currentUserState;
     //public bool done;
     bool count;
+    public bool isDead;
+    public bool isCharingToAttack;
     public GameObject EndTurnButton;
     public EndTurnButtonController endTurnButtonScript;
 
@@ -24,11 +26,9 @@ public class PlayerController : MonoBehaviour
         SELECTING,  //is ready now player chooses action
         CHARGING,   //wait time delay needed to perform action
         PERFORMING,
-
     }
 
     public Monster monster;
-    public bool isDead;
     public string spriteFile;
     public int currentHealth, maxHealth, attack, defense, level;
     public float currentSpeed, baseSpeed;
@@ -61,6 +61,7 @@ public class PlayerController : MonoBehaviour
         playerTickController.ChangeState(PlayerTickController.GaugeState.INCREASING);
         chargeTimer = 0.0f;
         currentSpeed = 0.0f;
+        isCharingToAttack = false;
         currentUserState = PlayerState.WAITING;
         EndTurnButton.SetActive(false);
     }
@@ -79,13 +80,10 @@ public class PlayerController : MonoBehaviour
         {
             //run death animation here
             //Design decision: either fade out and disable now, or allow them to be revived?
-        }
-    }
 
-    public void PlayTurn()
-    {
-        //GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>().Draw();
-        Debug.Log("Player turn: " + gameObject);
+            //end battle scene
+            BC.PlayerLose();
+        }
     }
 
     void CheckAttack()
@@ -109,7 +107,6 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<RuntimeAnimatorController>();
         spriteRenderer = GetComponent<SpriteRenderer>();
 
-
         if (animator == null)
             Debug.Log(this.gameObject + " monster animator is null");
         if (spriteRenderer == null)
@@ -117,7 +114,6 @@ public class PlayerController : MonoBehaviour
 
         if (!MonsterInfoDatabase.IsPopulated)
             MonsterInfoDatabase.Populate();
-
     }
 
     // Use this for initialization
@@ -180,6 +176,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
+            isCharingToAttack = true;
             chargeTimer += Time.fixedDeltaTime;
         }
     }

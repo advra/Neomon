@@ -8,6 +8,8 @@ public class HealthText : MonoBehaviour {
     MonsterController MC;
     PlayerController PC;
     CameraBehavior cameraBehavior;
+    public RectTransform canvasRect;
+    Vector2 canvasPos;
     Text text;
     public bool isPlayer;
     public int health;
@@ -26,9 +28,17 @@ public class HealthText : MonoBehaviour {
             {
                 MC = referenceMonster.GetComponent<MonsterController>();
             }
-            
+
             cameraBehavior = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraBehavior>();
             text.text = "";
+
+            canvasRect = GameObject.FindGameObjectWithTag("Canvas").GetComponent<RectTransform>();
+            //get reference relative position of the monster
+            Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(referenceMonster.transform.position);
+            //Convert screen position to Canvas / RectTransform space
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
+            //move text to Game object's position
+            GetComponent<RectTransform>().anchoredPosition = new Vector2(canvasPos.x, canvasPos.y + 100);
         }
         else
         {

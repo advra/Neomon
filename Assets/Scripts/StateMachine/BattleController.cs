@@ -41,14 +41,14 @@ public class BattleController : MonoBehaviour {
     bool paused;
     public float threshold = 1.0f;
 
-    PerformAction battleState;
+    //PerformAction battleState;
 
-    public enum PerformAction
-    {
-        WAIT,               //preparing or idling until information recieved
-        TAKEACTION,         //doing the action
-        EXECUTEACTION       //wait until action is completed
-    }
+    //public enum PerformAction
+    //{
+    //    WAIT,               //preparing or idling until information recieved
+    //    TAKEACTION,         //doing the action
+    //    EXECUTEACTION       //wait until action is completed
+    //}
 
     //used to normalize threshold based upon their speeds
     public void ThresholdUpdate(float value)
@@ -110,9 +110,8 @@ public class BattleController : MonoBehaviour {
     }
 
     // Use this for initialization
-    void Awake () {
-        battleState = PerformAction.WAIT;
-
+    void Awake ()
+    {
         if (tickPrefab == null)
             tickPrefab = Resources.Load<GameObject>("TickPrefab");
         if (playerTickPrefab == null)
@@ -183,22 +182,6 @@ public class BattleController : MonoBehaviour {
         }
     }
 
-    void Update()
-    {
-        switch (battleState)
-        {
-            case (PerformAction.WAIT):
-
-                break;
-            case (PerformAction.TAKEACTION):
-
-                break;
-            case (PerformAction.EXECUTEACTION):
-
-                break;
-        }
-    }
-
     //populates turn list
     public void AddTurnToQueue(HandleTurn turn)
     {
@@ -211,13 +194,25 @@ public class BattleController : MonoBehaviour {
         //send damageto targeted GO controller & Reset monsters speed / charge stats 
         if(monster == player)
         {
+            //check if targeted enemy is charging for an attack, if so reset their attack
+            //if (turnList[0].target.GetComponent<MonsterController>().isCharingToAttack)
+            //{
+            //    turnList[0].target.GetComponent<MonsterController>().ResetAttack();
+            //    //also remove their attack from queue by searching for it
+            //    for (int i = 0; i <= turnList.Count; i++)
+            //    {
+            //        if(turnList[i].owner == turnList[0].target)
+            //        {
+            //            turnList.RemoveAt(i);
+            //            return;
+            //        }
+            //    }
+            //}
             turnList[0].target.GetComponent<MonsterController>().Damage(turnList[0].damage);
-            //playerController.ResetAttack();
         }
         else
         {
             turnList[0].target.GetComponent<PlayerController>().Damage(turnList[0].damage);
-            //monster.GetComponent<MonsterController>().ResetAttack();
         }
         turnList.RemoveAt(0);
     }
@@ -235,8 +230,18 @@ public class BattleController : MonoBehaviour {
         Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
         // Convert screen position to Canvas / RectTransform space
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
-        //textObj.transform.localPosition = canvasPos;
+        //move text to Game object's position
         textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
+    }
+
+    public void PlayerWin()
+    {
+        Debug.Log("All enemies defeated, victory!!!");
+    }
+
+    public void PlayerLose()
+    {
+        Debug.Log("You've been defeated!");
     }
 }
 
