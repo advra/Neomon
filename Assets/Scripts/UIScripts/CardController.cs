@@ -145,12 +145,14 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             if (targetArea == TargetArea.single)
             {
                 battleController.PauseSpeedsForEnemies(false);
+                playerController.HideCombatUI();
                 SingleTargetAttack();
             }
             //Otherwise determine which target the card applies to
             else
             {
                 battleController.PauseSpeedsForEnemies(false);
+                playerController.HideCombatUI();
                 DetermineTargets();
             }
         }
@@ -368,22 +370,30 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
         if (targetArea == TargetArea.all)
         {
-            //If the enemy did not spawn this battle do nothing
-            if (battleController.monsterControllerA != null)
+            ////If the enemy did not spawn this battle do nothing
+            //if (battleController.monsterControllerA != null)
+            //{
+            //    battleController.monsterControllerA.Damage(damageAmount);
+            //    SpawnBattleTextAbove(playerHandController.enemyReferenceA);
+            //}
+            //if (battleController.monsterControllerB != null)
+            //{
+            //    battleController.monsterControllerB.Damage(damageAmount);
+            //    SpawnBattleTextAbove(playerHandController.enemyReferenceB);
+            //}
+            //if (battleController.monsterControllerC != null)
+            //{
+            //    battleController.monsterControllerC.Damage(damageAmount);
+            //    SpawnBattleTextAbove(playerHandController.enemyReferenceC);
+            //}
+
+
+            foreach(GameObject monster in battleController.EnemiesInBattle)
             {
-                battleController.monsterControllerA.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceA);
+                monster.GetComponent<MonsterController>().Damage(damageAmount);
             }
-            if (battleController.monsterControllerB != null)
-            {
-                battleController.monsterControllerB.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceB);
-            }
-            if (battleController.monsterControllerC != null)
-            {
-                battleController.monsterControllerC.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceC);
-            }
+
+
 
         }
         else if (targetArea == TargetArea.line)

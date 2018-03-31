@@ -318,9 +318,10 @@ public class PlayerHandController : MonoBehaviour {
         for (int i = 0; i < 5; i++)
         {
             deck.Add(sliceCard);
-            deck.Add(thrustCard);
+            deck.Add(entangleCard);
+            //deck.Add(thrustCard);
         }
-        deck.Add(entangleCard);
+        //deck.Add(entangleCard);
         Shuffle(deck);
 
         updateCount();

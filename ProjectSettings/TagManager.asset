@@ -18,6 +18,7 @@ TagManager:
   - PlayerTick
   - TickIcon
   - UIHeadReference
+  - InfoPanel
   layers:
   - Default
   - TransparentFX

@@ -59,6 +59,14 @@ public class BattleController : MonoBehaviour {
         }
     }
 
+    public void PauseMonsters()
+    {
+        foreach (GameObject monster in EnemiesInBattle)
+        {
+            monster.GetComponent<MonsterController>().pause = true;
+        }
+    }
+
     public int NumberOfEnemies
     {
         get { return numberOfEnemies; }
@@ -236,12 +244,16 @@ public class BattleController : MonoBehaviour {
 
     public void PlayerWin()
     {
-        Debug.Log("All enemies defeated, victory!!!");
+        isBattling = false;
+        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("BattleResultTextPrefab"), canvasRect.transform);
+        gameResultText.GetComponent<BattleResultText>().SetText("Victory!", "All enemies defeated", "Continue");
     }
 
     public void PlayerLose()
     {
-        Debug.Log("You've been defeated!");
+        isBattling = false;
+        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("BattleResultTextPrefab"), canvasRect.transform);
+        gameResultText.GetComponent<BattleResultText>().SetText("Defeat!", "Heroes are destined to die...", "Retry");
     }
 }
 

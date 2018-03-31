@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public PlayerHandController playerHand;
     public PlayerTickController playerTickController;
 
+
     public bool draw;
     public PlayerState currentUserState;
     //public bool done;
@@ -26,6 +27,7 @@ public class PlayerController : MonoBehaviour
         SELECTING,  //is ready now player chooses action
         CHARGING,   //wait time delay needed to perform action
         PERFORMING,
+        DEAD
     }
 
     public Monster monster;
@@ -66,11 +68,16 @@ public class PlayerController : MonoBehaviour
         EndTurnButton.SetActive(false);
     }
 
+    public void HideCombatUI()
+    {
+        EndTurnButton.SetActive(false);
+    }
+
     public void Damage(int amount)
     {
         this.currentHealth -= amount;
         //Play damage sprite here
-        if (this.currentHealth < 0)
+        if (this.currentHealth <= 0)
         {
             this.currentHealth = 0;
             this.isDead = true;
@@ -82,6 +89,10 @@ public class PlayerController : MonoBehaviour
             //Design decision: either fade out and disable now, or allow them to be revived?
 
             //end battle scene
+            currentUserState = PlayerState.DEAD;
+            //pause all enemies
+            BC.PauseMonsters();
+            //display losing text
             BC.PlayerLose();
         }
     }
@@ -200,6 +211,9 @@ public class PlayerController : MonoBehaviour
                 break;
             case (PlayerState.CHARGING):
                 ChargeSpeed(chargeDuration);
+                break;
+            case (PlayerState.DEAD):
+                HideCombatUI();
                 break;
             default:
                 break;

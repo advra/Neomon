@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Animator))]
 
-public class MonsterController : MonoBehaviour, IPointerEnterHandler
+public class MonsterController : MonoBehaviour
 {
 
     UserController userController;
@@ -34,6 +34,8 @@ public class MonsterController : MonoBehaviour, IPointerEnterHandler
     bool targeted;
     public bool isDead;
     public bool isCharingToAttack;
+    public new string name;
+    public string description;
     public string spriteFile;
     public int currentHealth, maxHealth, attack, defense, level;
     public int baseAttack, baseDefense;
@@ -45,6 +47,12 @@ public class MonsterController : MonoBehaviour, IPointerEnterHandler
     private BoxCollider2D boxCollider2D;
     //use this to check if targeted then change color
     Color lerpedColor;
+
+    //used for the info panel
+    GameObject panelInfoObject;
+    Vector2 canvasPos;
+    Vector2 screenPointToTarget;
+    Text[] panelInfoText;
 
     //at the end of every attack after executed (or canceled call this)
     public void ResetAttack()
@@ -126,6 +134,7 @@ public class MonsterController : MonoBehaviour, IPointerEnterHandler
         int random = Random.Range(0, moveSet.Count);
         damage = moveSet[random].damage;
         chargeDuration = moveSet[random].chargeTime;
+
         HandleTurn turn = new HandleTurn(this.gameObject, BC.player, moveSet[random].attackType, moveSet[random].damage, chargeDuration);
         BC.AddTurnToQueue(turn);
         //Begin charging
@@ -140,9 +149,10 @@ public class MonsterController : MonoBehaviour, IPointerEnterHandler
         //We can expand on this later
         int randomIndex = Random.Range(0, MonsterInfoDatabase.monsters.Count);   //returns 0 - 1
         monster = MonsterInfoDatabase.monsters[randomIndex];
+        name = monster.MonsterBase.name;
+        description = monster.MonsterBase.description;
         spriteFile = monster.MonsterBase.spriteFile;
         spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/mon/mon_" + spriteFile);
-
         trackingTickObject.GetComponent<EnemyTickController>().SetTickIcon(spriteFile);
         //We add box collider later because it inherits the sprites dimensions otherwise 
         //the box collider would not generate the appropriate size for the monster
@@ -203,16 +213,51 @@ public class MonsterController : MonoBehaviour, IPointerEnterHandler
         }
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
+    void OnMouseEnter()
     {
-        Debug.Log("Selected " + this.name + " at " + Time.time);
+        //Material mat = GetComponent<Renderer>().material;
+        //mat.color = Color.red;
+        UpdateInfo();
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    void OnMouseExit()
     {
-        Debug.Log("Exited " + this.name + " at " + Time.time);
+        RemoveInfo();
     }
 
+    void RemoveInfo()
+    {
+        //move it out of camera frame
+        panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 300);
+    }
+
+    void UpdateInfo()
+    {
+        if (!BC.isBattling)
+        {
+            return;
+        }
+
+        //obtain panel gameobject
+        if (panelInfoObject == null)
+        {
+            panelInfoObject = GameObject.FindGameObjectWithTag("InfoPanel");
+        }
+        //obtain panel text
+        if (panelInfoText == null)
+        {
+            panelInfoText = panelInfoObject.GetComponentsInChildren<Text>();
+        }
+        //set text
+        panelInfoText[0].text = this.name;
+        panelInfoText[1].text = this.description;
+        //capture screen Pos in 2d space from 3d space
+        screenPointToTarget = Camera.main.WorldToScreenPoint(this.transform.position);
+        // Convert screen position to Canvas / RectTransform space
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(BC.canvasRect, screenPointToTarget, null, out canvasPos);
+        //move text to Game object's position
+        panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(canvasPos.x - 100, canvasPos.y);
+    }
 
     IEnumerator FlashInput()
     {
