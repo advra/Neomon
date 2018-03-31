@@ -141,18 +141,16 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             HideCard();
             //this will destroy the card
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
+            battleController.PauseSpeedsForEnemies(false);
+            playerController.HideCombatUI();
             //if a single target card then apply to one monster
             if (targetArea == TargetArea.single)
             {
-                battleController.PauseSpeedsForEnemies(false);
-                playerController.HideCombatUI();
                 SingleTargetAttack();
             }
             //Otherwise determine which target the card applies to
             else
             {
-                battleController.PauseSpeedsForEnemies(false);
-                playerController.HideCombatUI();
                 DetermineTargets();
             }
         }
@@ -168,6 +166,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 playerHandController.AdjustCost(cost);
                 HideCard();
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
+                battleController.PauseSpeedsForEnemies(false);
                 DetermineTargets();
             }
             else
@@ -344,9 +343,13 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     //Called when a card is dragged on top of an enemy
     public void SingleTargetAttack()
     {
+        //ensure this card is removed
         state = State.DESTROY;
+        //setup and store the event data
         GameObject targetedMonster = ValidTargetDraggedOn();
-        HandleTurn turn = new HandleTurn(battleController.player, targetedMonster, targetArea, damageAmount, chargeTime);
+        List<GameObject> targets = new List<GameObject>();
+        targets.Add(targetedMonster);
+        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime);
         battleController.AddTurnToQueue(turn);
 
         //Begin charging
@@ -354,107 +357,53 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         playerController.chargeDuration = chargeTime;
         PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
         playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
-
-        //////////////////////////////////////////////////////////////////////////
-        //SpawnBattleText();
-        //GameObject targetedMonster = ValidTargetDraggedOn();
-        //targetedMonster.GetComponent<MonsterController>().Damage(damageAmount);
-        //Debug.Log("Targeted Monster is: " + targetedMonster);
     }
 
     //Called when a card is dropped on the battlefield
     //Works for all except for single target cards. Call SingleTargetAttack() instead
     public void DetermineTargets()
     {
+        //ensure this card is removed
         state = State.DESTROY;
-
         if (targetArea == TargetArea.all)
         {
-            ////If the enemy did not spawn this battle do nothing
-            //if (battleController.monsterControllerA != null)
-            //{
-            //    battleController.monsterControllerA.Damage(damageAmount);
-            //    SpawnBattleTextAbove(playerHandController.enemyReferenceA);
-            //}
-            //if (battleController.monsterControllerB != null)
-            //{
-            //    battleController.monsterControllerB.Damage(damageAmount);
-            //    SpawnBattleTextAbove(playerHandController.enemyReferenceB);
-            //}
-            //if (battleController.monsterControllerC != null)
-            //{
-            //    battleController.monsterControllerC.Damage(damageAmount);
-            //    SpawnBattleTextAbove(playerHandController.enemyReferenceC);
-            //}
+            //setup and store the event data
+            GameObject targetedMonster = ValidTargetDraggedOn();
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime);
+            battleController.AddTurnToQueue(turn);
 
-
-            foreach(GameObject monster in battleController.EnemiesInBattle)
-            {
-                monster.GetComponent<MonsterController>().Damage(damageAmount);
-            }
-
-
+            //Begin charging
+            playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+            playerController.chargeDuration = chargeTime;
+            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
 
         }
         else if (targetArea == TargetArea.line)
         {
-            if (battleController.monsterControllerB != null)
-            {
-                battleController.monsterControllerB.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceB);
-            }
-
-            //need to add monster D in the back
+            //logic needed in the future
         }
         else if (targetArea == TargetArea.split)
         {
-            if (battleController.monsterControllerA != null)
-            {
-                battleController.monsterControllerA.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceA);
-            }
-            if (battleController.monsterControllerB != null)
-            {
-                battleController.monsterControllerB.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceB);
-            }
-            if (battleController.monsterControllerC != null)
-            {
-                battleController.monsterControllerC.Damage(damageAmount);
-                SpawnBattleTextAbove(playerHandController.enemyReferenceC);
-            }
+            //logic needed in the future
         }
         else if (targetArea == TargetArea.random)
         {
             //Random.Range(min, max + 1)
-            int randomTarget = Random.Range(0, 3);
-            if (randomTarget == 0)
-            {
-                if (battleController.monsterControllerA != null)
-                {
-                    battleController.monsterControllerA.Damage(damageAmount);
-                    SpawnBattleTextAbove(playerHandController.enemyReferenceA);
-                }
-            }
-            else if (randomTarget == 1) {
-                if (battleController.monsterControllerB != null)
-                {
-                    battleController.monsterControllerB.Damage(damageAmount);
-                    SpawnBattleTextAbove(playerHandController.enemyReferenceB);
-                }
-            }
-            else if (randomTarget == 2)
-            {
-                if (battleController.monsterControllerC != null)
-                {
-                    battleController.monsterControllerC.Damage(damageAmount);
-                    SpawnBattleTextAbove(playerHandController.enemyReferenceC);
-                }
-            }
-            else
-            {
-                Debug.Log("Warning: Selecting random target range might be off double check for " + targetArea);
-            }
+            int randomTarget = Random.Range(0, battleController.numberOfEnemies + 1);
+            //ensure this card is removed
+            state = State.DESTROY;
+            //setup and store the event data
+            List<GameObject> targets = new List<GameObject>();
+            targets.Add(battleController.EnemiesInBattle[randomTarget]);
+            HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime);
+            battleController.AddTurnToQueue(turn);
+
+            //Begin charging
+            playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+            playerController.chargeDuration = chargeTime;
+            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
 
         }
         else

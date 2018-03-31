@@ -198,8 +198,10 @@ public class BattleController : MonoBehaviour {
 
     public void ExecuteTurnFor(GameObject monster)
     {
-        SpawnBattleTextAbove(turnList[0].target);
-        //send damageto targeted GO controller & Reset monsters speed / charge stats 
+        List <GameObject> targets = turnList[0].targets;
+        //create ui damage text above targeted monsters
+        SpawnBattleTextAboveEach(targets);
+        //send damage to targeted GO controller & Reset monsters speed / charge stats 
         if(monster == player)
         {
             //check if targeted enemy is charging for an attack, if so reset their attack
@@ -216,31 +218,58 @@ public class BattleController : MonoBehaviour {
             //        }
             //    }
             //}
-            turnList[0].target.GetComponent<MonsterController>().Damage(turnList[0].damage);
+            foreach (GameObject targetedMonster in targets)
+            {
+                targetedMonster.GetComponent<MonsterController>().Damage(turnList[0].damage);
+            } 
         }
         else
         {
-            turnList[0].target.GetComponent<PlayerController>().Damage(turnList[0].damage);
+            foreach (GameObject targetedMonster in targets)
+            {
+                targetedMonster.GetComponent<PlayerController>().Damage(turnList[0].damage);
+            }
         }
         turnList.RemoveAt(0);
     }
 
-    void SpawnBattleTextAbove(GameObject monster)
+    void SpawnBattleTextAboveEach(List<GameObject> targets)
     {
-        GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
-        textObj.transform.localScale = Vector3.one;
-        string s = turnList[0].damage.ToString();
-        textObj.GetComponent<Text>().text = s;
+        foreach (GameObject targetedMonster in targets)
+        {
+            GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
+            textObj.transform.localScale = Vector3.one;
+            string s = turnList[0].damage.ToString();
+            textObj.GetComponent<Text>().text = s;
 
-        Vector2 canvasPos;
-        GameObject targetedMonster = turnList[0].target;
-        //get target's position relative to canvas screen 
-        Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
-        // Convert screen position to Canvas / RectTransform space
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
-        //move text to Game object's position
-        textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
+            Vector2 canvasPos;
+            //GameObject targetedMonster = turnList[0].targets;
+            //get target's position relative to canvas screen 
+            Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
+            // Convert screen position to Canvas / RectTransform space
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
+            //move text to Game object's position
+            textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
+        }
+
     }
+
+    //void SpawnBattleTextAbove(GameObject monster)
+    //{
+    //    GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
+    //    textObj.transform.localScale = Vector3.one;
+    //    string s = turnList[0].damage.ToString();
+    //    textObj.GetComponent<Text>().text = s;
+
+    //    Vector2 canvasPos;
+    //    GameObject targetedMonster = turnList[0].target;
+    //    //get target's position relative to canvas screen 
+    //    Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
+    //    // Convert screen position to Canvas / RectTransform space
+    //    RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
+    //    //move text to Game object's position
+    //    textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
+    //}
 
     public void PlayerWin()
     {

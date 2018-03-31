@@ -7,7 +7,7 @@ using UnityEngine;
 public class HandleTurn {
     //unit who is performing this action
     public GameObject owner;
-    public GameObject target;
+    public List<GameObject> targets = new List<GameObject>();
     //area of effrct, single, self, all, random
     public TargetArea targetArea;
     public AttackType attackType;
@@ -18,27 +18,20 @@ public class HandleTurn {
 
     //player event constructor
     //constructor if not specific single attacker
-    public HandleTurn(GameObject owner, GameObject target, TargetArea targetArea, int damage, float chargeTime)
+    public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, float chargeTime)
     {
         this.owner = owner;
-        if(targetArea == TargetArea.single)
-        {
-            this.target = target;
-        }
-        else
-        {
-            this.target = null;
-        }
+        this.targets = target;
         this.targetArea = targetArea;
         this.damage = damage;
         this.chargeTime = chargeTime;
     }
 
     //constructor for enemy
-    public HandleTurn(GameObject owner, GameObject target, AttackType attackType, int damage, float chargeTime)
+    public HandleTurn(GameObject owner, List<GameObject> target, AttackType attackType, int damage, float chargeTime)
     {
         this.owner = owner;
-        this.target = target;
+        this.targets = target;
         this.attackType = attackType;
         this.damage = damage;
         this.chargeTime = chargeTime;

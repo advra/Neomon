@@ -27,6 +27,13 @@ public class MonsterController : MonoBehaviour
         PERFORMING,
     }
 
+    //used to quickly identify in the queuer the type of monster 
+    public enum Type
+    {
+        PLAYER,
+        ENEMY
+    }
+
     [SerializeField]
     public List<Attack> moveSet;
     public bool done;
@@ -134,8 +141,9 @@ public class MonsterController : MonoBehaviour
         int random = Random.Range(0, moveSet.Count);
         damage = moveSet[random].damage;
         chargeDuration = moveSet[random].chargeTime;
-
-        HandleTurn turn = new HandleTurn(this.gameObject, BC.player, moveSet[random].attackType, moveSet[random].damage, chargeDuration);
+        List<GameObject> target = new List<GameObject>();
+        target.Add(BC.player);
+        HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].attackType, moveSet[random].damage, chargeDuration);
         BC.AddTurnToQueue(turn);
         //Begin charging
         EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
