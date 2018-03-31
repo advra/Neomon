@@ -24,6 +24,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     Canvas canvas;
     Image cardImage;
     Card card;
+    Text[] texts;
 
     public GameObject PlayerHand;
 
@@ -81,6 +82,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             Debug.Log("playerController is null");
         }
+        //used to reference all the text gameobjects
+        texts = GetComponentsInChildren<Text>();
         //Greater is in front. 10 to ensure it is in front of all other GUI.
         canvas.sortingOrder = 10;
     }
@@ -92,16 +95,9 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             Debug.Log("Cannot find textPrefab for card in Resources folder");
         }
-    }
 
-    void OnMouseEnter()
-    {
-        
-    }
-
-    void OnMouseOver()
-    {
-
+        //texts[0].text = cardName;         //this is for the Cost Text which we wont change
+        texts[1].text = cost.ToString();
     }
 
     public void OnDrag(PointerEventData eventData)

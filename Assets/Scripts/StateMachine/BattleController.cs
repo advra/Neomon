@@ -148,6 +148,7 @@ public class BattleController : MonoBehaviour {
         //GameObject tickObj = Instantiate(tickPrefab, this.transform);
         //tickObj.GetComponent<GaugeTickController>().TrackedMonster = player;
         playerController = player.GetComponent<PlayerController>();
+        playerController.team = PlayerController.Team.PLAYER;
         FriendliesInBattle.Add(player);
 
         //Now setup enemy components and determine number of enemies
@@ -159,6 +160,7 @@ public class BattleController : MonoBehaviour {
             enemyC.SetActive(false);
             CreateProgressTickFor(enemyB);
             monsterControllerB = enemyB.GetComponent<MonsterController>();
+            monsterControllerB.team = MonsterController.Team.ENEMY;
             EnemiesInBattle.Add(enemyB);
         }
         else if(numberOfEnemies == 2)
@@ -168,6 +170,8 @@ public class BattleController : MonoBehaviour {
             CreateProgressTickFor(enemyC);
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             monsterControllerC = enemyC.GetComponent<MonsterController>();
+            monsterControllerB.team = MonsterController.Team.ENEMY;
+            monsterControllerC.team = MonsterController.Team.ENEMY;
             EnemiesInBattle.Add(enemyB);
             EnemiesInBattle.Add(enemyC);
         }
@@ -179,6 +183,9 @@ public class BattleController : MonoBehaviour {
             monsterControllerA = enemyA.GetComponent<MonsterController>();
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             monsterControllerC = enemyC.GetComponent<MonsterController>();
+            monsterControllerA.team = MonsterController.Team.ENEMY;
+            monsterControllerB.team = MonsterController.Team.ENEMY;
+            monsterControllerC.team = MonsterController.Team.ENEMY;
             EnemiesInBattle.Add(enemyA);
             EnemiesInBattle.Add(enemyB);
             EnemiesInBattle.Add(enemyC);
@@ -199,37 +206,57 @@ public class BattleController : MonoBehaviour {
     public void ExecuteTurnFor(GameObject monster)
     {
         List <GameObject> targets = turnList[0].targets;
+
+        //check if card can cancel
+        //check if canceling attack are on diff team if so do not cancel
+        //check if this monster is owner if index 0 otherwise toss out index 0
+
+
         //create ui damage text above targeted monsters
         SpawnBattleTextAboveEach(targets);
         //send damage to targeted GO controller & Reset monsters speed / charge stats 
-        if(monster == player)
+
+        foreach (GameObject targetedMonster in targets)
         {
-            //check if targeted enemy is charging for an attack, if so reset their attack
-            //if (turnList[0].target.GetComponent<MonsterController>().isCharingToAttack)
-            //{
-            //    turnList[0].target.GetComponent<MonsterController>().ResetAttack();
-            //    //also remove their attack from queue by searching for it
-            //    for (int i = 0; i <= turnList.Count; i++)
-            //    {
-            //        if(turnList[i].owner == turnList[0].target)
-            //        {
-            //            turnList.RemoveAt(i);
-            //            return;
-            //        }
-            //    }
-            //}
-            foreach (GameObject targetedMonster in targets)
-            {
-                targetedMonster.GetComponent<MonsterController>().Damage(turnList[0].damage);
-            } 
-        }
-        else
-        {
-            foreach (GameObject targetedMonster in targets)
+            if(targetedMonster == player)
             {
                 targetedMonster.GetComponent<PlayerController>().Damage(turnList[0].damage);
             }
+            else
+            {
+                targetedMonster.GetComponent<MonsterController>().Damage(turnList[0].damage);
+            }
+            
         }
+
+        //if(monster == player)
+        //{
+        //    //check if targeted enemy is charging for an attack, if so reset their attack
+        //    //if (turnList[0].target.GetComponent<MonsterController>().isCharingToAttack)
+        //    //{
+        //    //    turnList[0].target.GetComponent<MonsterController>().ResetAttack();
+        //    //    //also remove their attack from queue by searching for it
+        //    //    for (int i = 0; i <= turnList.Count; i++)
+        //    //    {
+        //    //        if(turnList[i].owner == turnList[0].target)
+        //    //        {
+        //    //            turnList.RemoveAt(i);
+        //    //            return;
+        //    //        }
+        //    //    }
+        //    //}
+        //    foreach (GameObject targetedMonster in targets)
+        //    {
+        //        targetedMonster.GetComponent<MonsterController>().Damage(turnList[0].damage);
+        //    } 
+        //}
+        //else
+        //{
+        //    foreach (GameObject targetedMonster in targets)
+        //    {
+        //        targetedMonster.GetComponent<PlayerController>().Damage(turnList[0].damage);
+        //    }
+        //}
         turnList.RemoveAt(0);
     }
 

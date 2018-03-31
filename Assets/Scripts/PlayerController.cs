@@ -7,6 +7,7 @@ public class PlayerController : MonoBehaviour
 
     UserController userController;
     public BattleController BC;
+    public Monster monster;
     public PlayerHandController playerHand;
     public PlayerTickController playerTickController;
 
@@ -30,7 +31,14 @@ public class PlayerController : MonoBehaviour
         DEAD
     }
 
-    public Monster monster;
+    //used to quickly identify in the queuer the type of monster 
+    public enum Team
+    {
+        PLAYER,
+        ENEMY
+    }
+
+    public Team team;
     public string spriteFile;
     public int currentHealth, maxHealth, attack, defense, level;
     public float currentSpeed, baseSpeed;

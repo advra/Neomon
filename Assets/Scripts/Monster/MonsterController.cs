@@ -28,7 +28,7 @@ public class MonsterController : MonoBehaviour
     }
 
     //used to quickly identify in the queuer the type of monster 
-    public enum Type
+    public enum Team
     {
         PLAYER,
         ENEMY
@@ -41,6 +41,7 @@ public class MonsterController : MonoBehaviour
     bool targeted;
     public bool isDead;
     public bool isCharingToAttack;
+    public Team team;
     public new string name;
     public string description;
     public string spriteFile;
@@ -211,7 +212,7 @@ public class MonsterController : MonoBehaviour
             {
                 BC.ExecuteTurnFor(this.gameObject);
                 ResetAttack();
-                monsterState = State.WAITING;
+                //monsterState = State.WAITING;
             }
         }
         else
