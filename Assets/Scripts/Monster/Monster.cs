@@ -10,9 +10,9 @@ public class Monster
     private int level;
     private int maxHealth;
     private int currentHealth;
-    private int speed;
-    private int attack;
-    private int defense;
+    private float speed;
+    private float attack;
+    private float defense;
     private bool dead;
     private int exp;
     private List<Attack> moveSet;
@@ -68,19 +68,19 @@ public class Monster
         get { return maxHealth; }
     }
 
-    public int Speed
+    public float Speed
     {
         get { return speed; }
         set { speed = value; }
     }
 
-    public int Attack
+    public float Attack
     {
         get { return attack; }
         set { attack = value; }
     }
 
-    public int Defense
+    public float Defense
     {
         get { return defense; }
         set { defense = value; }

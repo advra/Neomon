@@ -12,11 +12,18 @@ public class MonsterController : MonoBehaviour
 {
 
     UserController userController;
+    public PlayerController playerController;
     public BattleController BC;
+    public PlayerHandController playerHand;
+
     public Monster monster;
 
     public State monsterState;
     public GameObject trackingTickObject;
+    public PlayerTickController playerTickController;
+    public Canvas tickCanvas;
+    public Image[] tickImages;
+    public Material monsterMat;
 
     public enum State
     {
@@ -25,13 +32,16 @@ public class MonsterController : MonoBehaviour
         SELECTING,  //is ready now player chooses action
         CHARGING,   //wait time delay needed to perform action
         PERFORMING,
+        DEAD,
+        PAUSED
     }
 
     //used to quickly identify in the queuer the type of monster 
     public enum Team
     {
-        PLAYER,
-        ENEMY
+        UNASSIGNED,
+        ENEMY,
+        PLAYER
     }
 
     [SerializeField]
@@ -40,7 +50,7 @@ public class MonsterController : MonoBehaviour
     public bool pause;
     bool targeted;
     public bool isDead;
-    public bool isCharingToAttack;
+    public bool isChargingToAttack;
     public Team team;
     public new string name;
     public string description;
@@ -65,23 +75,31 @@ public class MonsterController : MonoBehaviour
     //at the end of every attack after executed (or canceled call this)
     public void ResetAttack()
     {
-        trackingTickObject.GetComponent<EnemyTickController>().state = EnemyTickController.GaugeState.RESET;
+        if (team == Team.ENEMY)
+        {
+            trackingTickObject.GetComponent<EnemyTickController>().state = EnemyTickController.GaugeState.RESET;
+        }
+        if (team == Team.PLAYER)
+        {
+            if (playerTickController == null)
+            {
+                playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+            }
+            playerTickController.ChangeState(PlayerTickController.GaugeState.INCREASING);
+            //playerController.currentUserState = PlayerController.PlayerState.WAITING;
+            BC.HideCombatUI();
+        }
         chargeTimer = 0.0f;
         currentSpeed = 0.0f;
-        isCharingToAttack = false;
+        isChargingToAttack = false;
         monsterState = State.WAITING;
         done = false;
-    }
-
-    public bool IsTargeted
-    {
-        set { targeted = value; }
     }
 
     public float CurrentSpeed
     {
         get { return currentSpeed; }
-        set { currentSpeed = value;  }
+        set { currentSpeed = value; }
     }
 
     void ChangeState(State state)
@@ -95,11 +113,43 @@ public class MonsterController : MonoBehaviour
         StartCoroutine(FlashInput());
     }
 
+    public void IsTargeted(bool b)
+    {
+        if (tickCanvas == null)
+        {
+            tickCanvas = trackingTickObject.GetComponent<Canvas>();
+        }
+
+        if (b)
+        {
+            monsterMat = GetComponent<Renderer>().material;
+            monsterMat.color = new Color(1, 0.5f, 0.5f, 1);
+
+            tickImages = trackingTickObject.GetComponentsInChildren<Image>();
+            tickImages[0].color = Color.red;
+            tickImages[1].color = new Color(1, 0.5f, 0.5f, 1);
+            tickCanvas.overrideSorting = true;
+            tickCanvas.sortingOrder = 3;
+        }
+        else
+        {
+            Material mat = GetComponent<Renderer>().material;
+            mat.color = Color.white;
+
+            tickImages = trackingTickObject.GetComponentsInChildren<Image>();
+            tickImages[0].color = Color.white;
+            tickImages[1].color = Color.white;
+
+            tickCanvas.overrideSorting = false;
+        }
+
+    }
+
     public void Damage(int amount)
     {
         this.currentHealth -= amount;
         //Play damage sprite here
-        if (this.currentHealth < 0)
+        if (this.currentHealth <= 0)
         {
             this.currentHealth = 0;
             this.isDead = true;
@@ -107,8 +157,28 @@ public class MonsterController : MonoBehaviour
 
         if (isDead)
         {
+            monsterState = State.DEAD;
+
             //run death animation here
             //Design decision: either fade out and disable now, or allow them to be revived?
+
+            if (team == Team.PLAYER)
+            {
+                //playerController.currentUserState = PlayerController.PlayerState.DEAD;
+                //pause all enemies
+                BC.PauseMonsters();
+                //display losing text
+                BC.PlayerLose();
+            }
+
+            if (team == Team.ENEMY)
+            {
+                if (BC.AllEnemiesDead())
+                {
+                    BC.PlayerWin();
+                }
+            }
+
         }
     }
 
@@ -122,9 +192,17 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    void DoDeath()
+    {
+        //Hide Tick
+        trackingTickObject.SetActive(false);
+        //plays fade animation
+        StartCoroutine(DeathFade());
+    }
+
     void CheckAttack()
     {
-        if(currentSpeed > BC.Threshold)
+        if (currentSpeed > BC.Threshold)
         {
             BC.IsPaused = true;
             Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
@@ -139,30 +217,72 @@ public class MonsterController : MonoBehaviour
     //randomly select an attack in their move list
     void SelectAttack()
     {
-        int random = Random.Range(0, moveSet.Count);
-        damage = moveSet[random].damage;
-        chargeDuration = moveSet[random].chargeTime;
-        List<GameObject> target = new List<GameObject>();
-        target.Add(BC.player);
-        HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].attackType, moveSet[random].damage, chargeDuration);
-        BC.AddTurnToQueue(turn);
-        //Begin charging
-        EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
-        enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
-        monsterState = State.CHARGING;
+        BC.PauseSpeedsForAllMonsters(true);
+        //randomly select attack from attack set for enemies
+        if (team == Team.ENEMY)
+        {
+            int random = Random.Range(0, moveSet.Count);
+            damage = moveSet[random].damage;
+            chargeDuration = moveSet[random].chargeTime;
+            bool isCanceling = moveSet[random].isCanceling;
+            List<GameObject> target = new List<GameObject>();
+            target.Add(BC.player);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].attackType, moveSet[random].damage, chargeDuration, isCanceling);
+            BC.AddTurnToQueue(turn);
+            //Begin charging
+            EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
+            enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
+            monsterState = State.CHARGING;
+            BC.PauseSpeedsForAllMonsters(false);
+        }
+        //wait until card controller changes users state from here
+        if (team == Team.PLAYER)
+        {
+            //Necessary to prevent monsters from increasing their speeds when its players turn
+            BC.PauseSpeedsForAllMonsters(true);
+            //Debug.Log("Waiting for user to select cards");
+        }
     }
+
 
     void SpawnEnemy()
     {
-        //for now we will just a random selection within our database
-        //We can expand on this later
-        int randomIndex = Random.Range(0, MonsterInfoDatabase.monsters.Count);   //returns 0 - 1
-        monster = MonsterInfoDatabase.monsters[randomIndex];
+        //will replace this with scriptable objects?
+        if (!MonsterInfoDatabase.IsPopulated)
+        {
+            MonsterInfoDatabase.Populate();
+        }
+
+        if (team == Team.PLAYER)
+        {
+            //Set to squidra for now until we expand on graphics
+            monster = MonsterInfoDatabase.monsters[0];
+            //Set tick icon concatenate "f" for friendly
+            spriteFile = monster.MonsterBase.spriteFile + "_f";
+            trackingTickObject.GetComponent<PlayerTickController>().SetTickIcon(spriteFile);
+        }
+        else
+        {
+            //for now we will just a random selection within our database
+            //We can expand on this later
+            int randomIndex = Random.Range(0, MonsterInfoDatabase.monsters.Count);   //returns 0 - 1
+            //monster = MonsterInfoDatabase.monsters[randomIndex];
+            monster = MonsterInfoDatabase.monsters[1];
+            //get moves from the "deck" of the enemy
+            moveSet = monster.MoveSet;
+            //Set tick icon
+            spriteFile = monster.MonsterBase.spriteFile;
+            trackingTickObject.GetComponent<EnemyTickController>().SetTickIcon(spriteFile);
+        }
         name = monster.MonsterBase.name;
         description = monster.MonsterBase.description;
-        spriteFile = monster.MonsterBase.spriteFile;
+        if (team == Team.PLAYER)
+        {
+            //We concatenate _b to refer rear sprite images for player sprites
+            spriteFile = monster.MonsterBase.spriteFile + "_b";
+        }
         spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/mon/mon_" + spriteFile);
-        trackingTickObject.GetComponent<EnemyTickController>().SetTickIcon(spriteFile);
+        
         //We add box collider later because it inherits the sprites dimensions otherwise 
         //the box collider would not generate the appropriate size for the monster
         gameObject.AddComponent<BoxCollider2D>();
@@ -173,16 +293,18 @@ public class MonsterController : MonoBehaviour
         }
         currentHealth = monster.Health;
         maxHealth = monster.MaxHealth;
-        baseSpeed = monster.Speed;
+        //add slight variance so icons are not the same
+        float variance = Random.Range(-.5f,.5f);
+        baseSpeed = monster.Speed + variance;
         BC.ThresholdUpdate(baseSpeed);
-        moveSet = monster.MoveSet;
         Debug.Log(monster.Print);
     }
 
     void IncreaseSpeed()
     {
         //this will prevent speed increasing when still user's turn
-        if (pause)
+        //Note: May need ot make player exclusive
+        if (pause || (BC.battleState == BattleController.State.ENDCONDITION))
         {
             return;
         }
@@ -208,36 +330,66 @@ public class MonsterController : MonoBehaviour
         if (chargeTimer >= durationInSeconds) //change back to BC.Threshold for testing
         {
             //this will ensure it will not reset without trigger if it is not their turn
-            if (BC.turnList[0].owner == this.gameObject)
-            {
-                BC.ExecuteTurnFor(this.gameObject);
+            //if (BC.turnList[0].owner == this.gameObject)
+            //{
+                BC.ExecuteTurnFor(this.gameObject); 
                 ResetAttack();
-                //monsterState = State.WAITING;
-            }
+            //}
         }
         else
         {
-            isCharingToAttack = true;
+            isChargingToAttack = true;
             chargeTimer += Time.deltaTime;
         }
     }
 
     void OnMouseEnter()
     {
-        //Material mat = GetComponent<Renderer>().material;
-        //mat.color = Color.red;
-        UpdateInfo();
+        if (isDead)
+            return;
+
+        if(team == Team.PLAYER)
+        {
+            Material mat = GetComponent<Renderer>().material;
+            mat.color = new Color(0.5f, 1, 0.5f, 1); 
+            return;
+        }
+        else
+        {
+            IsTargeted(true);
+
+            UpdateInfo();
+        }
     }
 
     void OnMouseExit()
     {
+        if (isDead)
+            return;
+
+        IsTargeted(false);
         RemoveInfo();
     }
 
     void RemoveInfo()
     {
-        //move it out of camera frame
-        panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 300);
+        if (panelInfoObject == null)
+        {
+            return;
+        }
+
+        if (team == Team.PLAYER)
+        {
+            return;
+        }
+        else
+        {
+            //unhighlight tick
+            trackingTickObject.GetComponent<Image>().color = Color.white;
+            //move info out of camera frame
+            panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 300);
+        }
+
     }
 
     void UpdateInfo()
@@ -265,7 +417,26 @@ public class MonsterController : MonoBehaviour
         // Convert screen position to Canvas / RectTransform space
         RectTransformUtility.ScreenPointToLocalPointInRectangle(BC.canvasRect, screenPointToTarget, null, out canvasPos);
         //move text to Game object's position
-        panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(canvasPos.x - 100, canvasPos.y);
+        panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(canvasPos.x - 100, canvasPos.y -50);
+    }
+
+    void SetupHandForPlayer()
+    {
+        if(team == Team.PLAYER)
+        {
+            playerHand.SetupHand();
+            BC.EndTurnButton.SetActive(true);
+        }
+    }
+
+    IEnumerator DeathFade()
+    {
+        for (float f = 1f; f > 0f; f -= 0.005f)
+        {
+            spriteRenderer.color = new Color(1, 1, 1, f); 
+            yield return null;
+        }
+        //this.gameObject.SetActive(false);
     }
 
     IEnumerator FlashInput()
@@ -303,19 +474,17 @@ public class MonsterController : MonoBehaviour
         {
             Debug.Log(this.gameObject + " monster sprite renderer is null");
         }
-
-        if (!MonsterInfoDatabase.IsPopulated)
-        {
-            MonsterInfoDatabase.Populate();
-        }
-
     }
 
     void Start ()
     {
         //get reference to UserController to check if mouse is on top of this monster
         userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
-
+        if (team == Team.PLAYER && playerController == null)
+        {
+            playerController = GetComponent<PlayerController>();
+            playerHand = GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>();
+        }
         SpawnEnemy();
     }
 
@@ -327,6 +496,7 @@ public class MonsterController : MonoBehaviour
                 IncreaseSpeed();
                 break;
             case (State.READY):
+                SetupHandForPlayer();
                 monsterState = State.SELECTING;
                 break;
             case (State.SELECTING):
@@ -334,6 +504,11 @@ public class MonsterController : MonoBehaviour
                 break;
             case (State.CHARGING):
                 ChargeSpeed(chargeDuration);
+                break;
+            case (State.DEAD):
+                DoDeath();
+                break;
+            case (State.PAUSED):
                 break;
             default:
                 break;

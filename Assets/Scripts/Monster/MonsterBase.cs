@@ -9,9 +9,9 @@ public abstract class MonsterBase
     public string description;
     public string spriteFile;
     public int baseHealth;
-    public int baseAttack;
-    public int baseDefense;
-    public int baseSpeed;
+    public float baseAttack;
+    public float baseDefense;
+    public float baseSpeed;
     public BaseType baseType;
     public List<Attack> moveSet = new List<Attack>();    //defines what attacks this monster has
 

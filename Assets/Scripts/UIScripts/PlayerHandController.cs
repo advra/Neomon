@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class PlayerHandController : MonoBehaviour {
     Card card;
-    PlayerController playerController;
+    MonsterController playerController;
     BattleController BC;
 
     public GameObject cardPrefab;
@@ -50,6 +50,13 @@ public class PlayerHandController : MonoBehaviour {
     public int cardsInHandLength = 0;
 
     private ChargeText chargeText;
+
+    public enum State
+    {
+        IDLE,
+        DRAWING,
+        SELECTING
+    }
 
     public int CardCharge
     {
@@ -137,16 +144,17 @@ public class PlayerHandController : MonoBehaviour {
                     cardObj.transform.SetParent(this.transform);
                     //Apply the card attributes we need on the GameObject
                     CardController cardController = cardObj.GetComponent<CardController>();
-                    cardController.cardName = deck[0].name;
-                    //cardController.cardSprite = deck[0].sprite;
+                    cardController.name = deck[0].name;
+                    cardController.description = deck[0].description;
                     cardController.damageAmount = deck[0].damage;
                     cardController.targetArea = deck[0].targetArea;
                     cardController.cost = deck[0].cost;
                     cardController.chargeTime = deck[0].charge;
+                    cardController.isCanceling = deck[0].isCanceling;
                     cardController.PlayerHand = this.gameObject;
                     Image cardImage = cardObj.GetComponent<Image>();
                     //cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
-                    cardImage.sprite = deck[0].artwork;
+                    //cardImage.sprite = deck[0].artwork;
                     //visually format image
                     cardInHands.Add(cardObj);
                     cardController.HandIndex = cardsInHandLength;
@@ -270,7 +278,7 @@ public class PlayerHandController : MonoBehaviour {
 
         if (playerController == null)
         {
-            playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+            playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
         }
         
         if(chargeText == null)
@@ -318,10 +326,10 @@ public class PlayerHandController : MonoBehaviour {
         for (int i = 0; i < 5; i++)
         {
             deck.Add(sliceCard);
-            deck.Add(entangleCard);
-            //deck.Add(thrustCard);
+            deck.Add(thrustCard);
         }
-        //deck.Add(entangleCard);
+        deck.Add(entangleCard);
+
         Shuffle(deck);
 
         updateCount();
@@ -331,10 +339,8 @@ public class PlayerHandController : MonoBehaviour {
     public void EndTurn()
     {
         isPlayerTurn = false;
-        BC.PauseSpeedsForEnemies(false);
+        BC.PauseSpeedsForAllMonsters(false);
         playerController.ResetAttack();
-        //PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
-        //playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
     }
 
     public bool PlayerHasEnoughCharges(int cost)

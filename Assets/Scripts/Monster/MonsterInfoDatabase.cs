@@ -27,7 +27,7 @@ public static class MonsterInfoDatabase
         Monster squid = new Monster(new MonsterAqua("Squidra", "An enemy with no armor. Shouldn't be difficult to defeat", "squid", 15, 5, 3, 4), 1);
         monsters.Add(squid);
 
-        Monster toxicMushroom = new Monster(new MonsterFungi("Toxic Mushroom", "A purple poisonous mushroom. Definitely dangerous with those pair of glowing eyes!", "toxicmush", 25, 6, 2, 5), 1);
+        Monster toxicMushroom = new Monster(new MonsterFungi("Toxic Mushroom", "A purple poisonous mushroom. Definitely dangerous with those pair of glowing eyes!", "toxicmush", 25, 6, 2, 4.8f), 1);
         monsters.Add(toxicMushroom);
 
         Monster kidMushroom = new Monster(new MonsterFungi("Mush-Kid", "Both an odd mushroom and an odd kid...", "kidmush", 10, 7, 3, 3), 1);

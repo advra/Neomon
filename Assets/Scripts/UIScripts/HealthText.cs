@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class HealthText : MonoBehaviour {
     public GameObject referenceMonster;
-    MonsterController MC;
-    PlayerController PC;
+    MonsterController monsterController;
+    //PlayerController PC;
     CameraBehavior cameraBehavior;
     public RectTransform canvasRect;
     Vector2 canvasPos;
@@ -20,15 +20,7 @@ public class HealthText : MonoBehaviour {
         if (referenceMonster.activeInHierarchy == true)
         {
             text = GetComponent<Text>();
-            if (isPlayer)
-            {
-                PC = referenceMonster.GetComponent<PlayerController>();
-            }
-            else
-            {
-                MC = referenceMonster.GetComponent<MonsterController>();
-            }
-
+            monsterController = referenceMonster.GetComponent<MonsterController>();
             cameraBehavior = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraBehavior>();
             text.text = "";
 
@@ -51,9 +43,13 @@ public class HealthText : MonoBehaviour {
         StartCoroutine(FadeInRoutine());
     }
 
-    public void FadeOut()
+    IEnumerator DeathFade()
     {
-        StartCoroutine(FadeInRoutine());
+        for (float f = 1f; f > 0f; f -= 0.005f)
+        {
+            text.color = new Color(1, 1, 1, f); 
+            yield return null;
+        }
     }
 
     private IEnumerator FadeInRoutine()
@@ -80,35 +76,17 @@ public class HealthText : MonoBehaviour {
     void Update () {
         if (cameraBehavior.cameraIntroIsDone == true)
         {
-            if (PC)
+            if (monsterController.monster.IsDead)
             {
-                if (PC.monster.IsDead)
-                {
-                    text.text = "HP: 0/" + maxHealth;
-                    FadeOut();
-                }
-                else
-                {
-                    health = PC.currentHealth;
-                    maxHealth = PC.maxHealth;
-                    text.text = "HP: " + health + " / " + maxHealth;
-                    FadeIn();
-                }
+                StartCoroutine(DeathFade());
+                text.text = "HP: 0/" + maxHealth;
             }
             else
             {
-                if (MC.monster.IsDead)
-                {
-                    text.text = "HP: 0/" + maxHealth;
-                    FadeOut();
-                }
-                else
-                {
-                    health = MC.currentHealth;
-                    maxHealth = MC.maxHealth;
-                    text.text = "HP: " + health + " / " + maxHealth;
-                    FadeIn();
-                }
+                health = monsterController.currentHealth;
+                maxHealth = monsterController.maxHealth;
+                text.text = "HP: " + health + " / " + maxHealth;
+                FadeIn();
             }
         }
 

@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Name: Entangle
   m_EditorClassIdentifier: 
   name: Entangle
-  description: Penetrate Enemies within a Line
+  description: Attacks all enemies for 3 DMG
   artwork: {fileID: 21300000, guid: 296022fda35660a4682693dfb8fd2cf8, type: 3}
   damage: 3
   cost: 2
   charge: 2
   targetArea: 5
+  isCanceling: 0

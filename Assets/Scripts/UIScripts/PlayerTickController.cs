@@ -7,9 +7,11 @@ public class PlayerTickController : MonoBehaviour
 {
     BattleController BC;
     MonsterController monsterController;
-    PlayerController playerController;
+    //PlayerController playerController;
     public bool isPlayer;
     public GaugeState state;
+    public GameObject TickIcon;
+    public string spriteIcon;
     public float tickThreshold;
     [SerializeField]
     private float idlePercentage;
@@ -74,7 +76,7 @@ public class PlayerTickController : MonoBehaviour
 
     public void ReadyUp()
     {
-        playerController.currentUserState = PlayerController.PlayerState.READY;
+        monsterController.monsterState = MonsterController.State.READY;
         //state = GaugeState.INCREASING;
     }
 
@@ -86,7 +88,7 @@ public class PlayerTickController : MonoBehaviour
 
     public void ComputeCharge()
     {
-        chargePercentage = (playerController.chargeTimer / playerController.chargeDuration) * 100f;
+        chargePercentage = (monsterController.chargeTimer / monsterController.chargeDuration) * 100f;
         //update position over time
         if (chargePercentage <= 100.0f)
         {
@@ -111,7 +113,7 @@ public class PlayerTickController : MonoBehaviour
     void ComputeIdle()
     {
         //get percentage total assuming our threshold is 100
-        idlePercentage = (playerController.currentSpeed / BC.threshold) * 100f;
+        idlePercentage = (monsterController.currentSpeed / BC.threshold) * 100f;
         //if we are not ready (at 100%) then keep incrementing position of tick
         if (idlePercentage <= 100.0f)
         {
@@ -124,6 +126,13 @@ public class PlayerTickController : MonoBehaviour
             state = GaugeState.STOP;
             return;
         }
+    }
+
+    public void SetTickIcon(string s)
+    {
+        //this.spriteIcon = s;
+        //GetComponentInChildren<Image>().sprite = Resources.Load<Sprite>("Sprites/bar/tick_" + s);
+        GetComponentInChildren<LoadTickIcon>().Load(s);
     }
 
     void Awake()
@@ -139,12 +148,13 @@ public class PlayerTickController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        if (playerController == null)
-            Debug.Log("playerController for Tick GUI is null");
+        if (monsterController == null)
+        {
+            monsterController = trackedMonster.GetComponent<MonsterController>();
+        }
         differenceBound = windowMaxBound - windowMinBound;
         rangeWaitBound = 100.0f - windowMinBound;
         rangeChargeBound = windowMaxBound - 100.0f;
-        playerController = trackedMonster.GetComponent<PlayerController>();
         positionY = transform.localPosition.y;
     }
 

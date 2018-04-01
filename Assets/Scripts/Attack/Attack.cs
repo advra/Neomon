@@ -20,10 +20,11 @@ public class Attack {
     public AttackType attackType;
     public int damage;
     public float chargeTime;
+    public bool isCanceling;    //will this attack cancel other attacks?
     public bool isRepeating;
     public int repeatTimes;
 
-    public Attack(AttackType attackType, string name, string description, int damage, float chargeTime)
+    public Attack(AttackType attackType, string name, string description, int damage, float chargeTime, bool isCanceling)
     {
         this.name = name;
         this.description = description;
@@ -31,6 +32,7 @@ public class Attack {
         this.chargeTime = chargeTime;
         this.attackType = attackType;
         this.isRepeating = false;
+        this.isCanceling = isCanceling;
     }
 
     public Attack(AttackType attackType, string name, string description, int damage, float chargeTime, bool isRepeating, int repeatTimes)

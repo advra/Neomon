@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Name: Thrust
   m_EditorClassIdentifier: 
   name: Thrust
-  description: Penetrate Enemies within a Line
+  description: Quickly thrust forward to Cancel an Enemy Attack and Deal 2 DMG.
   artwork: {fileID: 21300000, guid: 415bc2d23b0724645bc4522d395b9402, type: 3}
   damage: 2
   cost: 1
-  charge: 1
-  targetArea: 2
+  charge: 0.5
+  targetArea: 0
+  isCanceling: 1

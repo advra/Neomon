@@ -132,7 +132,7 @@ public class GaugeTickController : MonoBehaviour {
     void Compute()
     {
         //get percentage total assuming out threshold is 100
-        newPercentage = (playerController.currentSpeed / BC.threshold) * 100f ;
+        newPercentage = (monsterController.currentSpeed / BC.threshold) * 100f ;
         //if we are not ready (at 100%) then keep incrementing position of tick
         if(newPercentage <= 100.0f)
         {

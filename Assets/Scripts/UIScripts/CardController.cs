@@ -18,22 +18,27 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     BattleController battleController;
     PlayerHandController playerHandController;
-    PlayerController playerController;
+    MonsterController playerController;
+    MonsterController monsterController;
 
     //not to be confused with the Hand Canvas
     Canvas canvas;
     Image cardImage;
     Card card;
     Text[] texts;
+    Image[] images;
 
     public GameObject PlayerHand;
 
-    public string cardName;
-    public string cardSprite;
+    public new string name;
+    public string description;
+    public Sprite sprite;
+    public TargetArea targetArea;
     public int damageAmount;
     public int cost;
     public float chargeTime;
-    public TargetArea targetArea;
+    public bool isCanceling;
+
     public State state; 
     [SerializeField]
     private int handIndex;
@@ -77,15 +82,16 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             Debug.Log("battleController is null");
         }
-        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
+        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
         if (playerController == null)
         {
             Debug.Log("playerController is null");
         }
         //used to reference all the text gameobjects
         texts = GetComponentsInChildren<Text>();
+        images = GetComponentsInChildren<Image>();
         //Greater is in front. 10 to ensure it is in front of all other GUI.
-        canvas.sortingOrder = 10;
+        canvas.sortingOrder = 2;
     }
 
     void Start ()
@@ -98,6 +104,22 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
         //texts[0].text = cardName;         //this is for the Cost Text which we wont change
         texts[1].text = cost.ToString();
+        texts[2].text = name;
+        if (description.Length > 30)
+        {
+            texts[3].fontSize = 20;
+        }
+        texts[3].text = description;
+        //texts[3].text = description;
+        if(targetArea == TargetArea.single)
+        {
+            images[1].sprite = Resources.Load<Sprite>("Sprites/type_single");
+        }
+        if (targetArea == TargetArea.all)
+        {
+            images[1].sprite = Resources.Load<Sprite>("Sprites/type_all");
+        }
+        
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -110,12 +132,25 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         //Debug.Log("Distance factor: " + distanceFactor);
         RescaleCard(distanceFactor);
         VaryTranspaency(distanceFactor);
-        
+
+        if(targetArea == TargetArea.all)
+        {
+            foreach(GameObject monster in battleController.EnemiesInBattle)
+            {
+                monster.GetComponent<MonsterController>().IsTargeted(true);
+            }
+        }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (!playerHandController.isPlayerTurn)
+        //reset colors
+        foreach (GameObject monster in battleController.EnemiesInBattle)
+        {
+            monster.GetComponent<MonsterController>().IsTargeted(false);
+        }
+
+        if(!(battleController.player.GetComponent<MonsterController>().monsterState == MonsterController.State.SELECTING))
         {
             //provide player feedback it is not their turn
             //or discard cards completely and draw a new hand every time
@@ -123,10 +158,26 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             return;
         }
 
+        //if (!playerHandController.isPlayerTurn)
+        //{
+
+        //}
+
         if (!playerHandController.PlayerHasEnoughCharges(cost))
         {
             state = State.RESET;
             return;
+        }
+
+
+        //prevent player from attacking himself unless it is a "self or heal card"
+        if(targetArea == TargetArea.single)
+        {
+            if (IsPlayerValidTarget() == battleController.player)
+            {
+                state = State.RESET;
+                return;
+            }
         }
 
         //If Card dropped over 1 monster
@@ -137,8 +188,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             HideCard();
             //this will destroy the card
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-            battleController.PauseSpeedsForEnemies(false);
-            playerController.HideCombatUI();
+            battleController.PauseSpeedsForAllMonsters(false);
+            battleController.HideCombatUI();
             //if a single target card then apply to one monster
             if (targetArea == TargetArea.single)
             {
@@ -162,7 +213,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 playerHandController.AdjustCost(cost);
                 HideCard();
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-                battleController.PauseSpeedsForEnemies(false);
+                battleController.PauseSpeedsForAllMonsters(false);
                 DetermineTargets();
             }
             else
@@ -260,6 +311,16 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public void HideCard()
     {
         cardImage.color = Color.clear;
+        foreach(Text t in texts)
+        {
+            t.color = Color.clear;
+        }
+
+        foreach(Image i in images)
+        {
+            i.color = Color.clear;
+        }
+        
     }
 
     public void ResetTransparency()
@@ -295,6 +356,22 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         else
         {
             return false;
+        }
+    }
+
+    //checks if hits player
+    public GameObject IsPlayerValidTarget()
+    {
+        hitInfo = new RaycastHit();
+        screenRay = Camera.main.ScreenPointToRay(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0.0f));
+        hit = Physics2D.GetRayIntersection(screenRay);
+        if (hit)
+        {
+            return hit.transform.gameObject;
+        }
+        else
+        {
+            return null;
         }
     }
 
@@ -345,11 +422,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         GameObject targetedMonster = ValidTargetDraggedOn();
         List<GameObject> targets = new List<GameObject>();
         targets.Add(targetedMonster);
-        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime);
+        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling);
         battleController.AddTurnToQueue(turn);
 
         //Begin charging
-        playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+        playerController.monsterState = MonsterController.State.CHARGING;
         playerController.chargeDuration = chargeTime;
         PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
         playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
@@ -365,11 +442,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             //setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
-            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime);
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime, isCanceling);
             battleController.AddTurnToQueue(turn);
 
             //Begin charging
-            playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+            playerController.monsterState = MonsterController.State.CHARGING;
             playerController.chargeDuration = chargeTime;
             PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
@@ -392,11 +469,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             //setup and store the event data
             List<GameObject> targets = new List<GameObject>();
             targets.Add(battleController.EnemiesInBattle[randomTarget]);
-            HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime);
+            HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling);
             battleController.AddTurnToQueue(turn);
 
             //Begin charging
-            playerController.currentUserState = PlayerController.PlayerState.CHARGING;
+            playerController.monsterState = MonsterController.State.CHARGING;
             playerController.chargeDuration = chargeTime;
             PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);

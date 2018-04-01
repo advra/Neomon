@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 224863973008894096}
   - component: {fileID: 222161634407585016}
   - component: {fileID: 114529044510550772}
+  - component: {fileID: 114718948750254522}
   m_Layer: 5
   m_Name: Image
   m_TagString: Untagged
@@ -39,6 +40,7 @@ GameObject:
   - component: {fileID: 222310795024700018}
   - component: {fileID: 114046681844101164}
   - component: {fileID: 114329356446218284}
+  - component: {fileID: 223998512168635954}
   m_Layer: 5
   m_Name: PlayerTickPrefab
   m_TagString: PlayerTick
@@ -86,6 +88,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isPlayer: 0
   state: 0
+  TickIcon: {fileID: 0}
+  spriteIcon: 
   tickThreshold: 0
   idlePercentage: 0
   chargePercentage: 0
@@ -126,6 +130,18 @@ MonoBehaviour:
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
+--- !u!114 &114718948750254522
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1272038583861338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d51d9fbf151307d43adaf2a4d7d4b305, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  imageLoaded: 
 --- !u!222 &222161634407585016
 CanvasRenderer:
   m_ObjectHideFlags: 1
@@ -138,6 +154,26 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1409825458817640}
+--- !u!223 &223998512168635954
+Canvas:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1409825458817640}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
 --- !u!224 &224294761496117028
 RectTransform:
   m_ObjectHideFlags: 1

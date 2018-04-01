@@ -17,6 +17,7 @@ public class EnemyTickController : MonoBehaviour
     [SerializeField]
     private float chargePercentage;
     public float zeroBound;             //x position where marker hits middle of wait and charge areas
+    public Image[] images;
 
     public enum GaugeState
     {
@@ -129,13 +130,6 @@ public class EnemyTickController : MonoBehaviour
         }
     }
 
-    void SetTickIcon()
-    {
-        //Image tickIcon = GetComponentInChildren<Image>();
-        //tickIcon.sprite = Resources.Load<Sprite>("Sprites/mon/tick_" + monsterController.spriteFile);
-        this.spriteIcon = monsterController.spriteFile;
-    }
-
     void Awake()
     {
         BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
@@ -156,7 +150,7 @@ public class EnemyTickController : MonoBehaviour
         rangeChargeBound = windowMaxBound - 100.0f;
         monsterController = trackedMonster.GetComponent<MonsterController>();
         positionY = transform.localPosition.y;
-        SetTickIcon();
+        //SetTickIcon();
     }
 
     public void SetTickIcon(string s)
