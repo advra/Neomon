@@ -14,6 +14,10 @@ public class BattleTextController : MonoBehaviour
     private Vector3 currentPos;
     private int fontScale;
 
+    Vector3 startPos;
+    Vector3 endPos;
+    private float fraction = 0;
+
     // Use this for initialization
     void Awake()
     {
@@ -32,6 +36,8 @@ public class BattleTextController : MonoBehaviour
     void Start()
     {
         currentPos = transform.position;
+        startPos = currentPos;
+        endPos = new Vector2(startPos.x, startPos.y + 250);
         fontScale = text.fontSize;
         text.CrossFadeAlpha(0.0f, 1.0f, false);
         StartCoroutine(SplatText());
@@ -40,13 +46,22 @@ public class BattleTextController : MonoBehaviour
 
     void Update()
     {
-        FloatText();
+        FloatText(1.0f);
     }
 
     void FloatText()
     {
         currentPos = transform.position;
         transform.position = new Vector3(currentPos.x, currentPos.y + 5);
+    }
+
+    void FloatText(float speed)
+    {
+        if (fraction < 1)
+        {
+            fraction += Time.deltaTime * speed;
+            transform.position = Vector3.Lerp(startPos, endPos, fraction);
+        }
     }
 
     IEnumerator SplatText()

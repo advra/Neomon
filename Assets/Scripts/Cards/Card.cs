@@ -5,12 +5,12 @@ using UnityEngine;
 
 public enum TargetArea
 {
-    single = 0,
-    split,
-    line,
-    self,
-    random,
-    all             
+    SINGLE = 0,
+    ALL,
+    SPLIT,
+    LINE,
+    SELF,
+    RANDOM             
 }
 
 [CreateAssetMenu(fileName ="New Card", menuName = "Game/Card")]

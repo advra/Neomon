@@ -15,8 +15,8 @@ public  class MonsterFungi : MonsterBase {
         this.baseSpeed = SPD;
         this.baseType = BaseType.FUNGI;
 
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Stem Slap", "The enemy body slams you with their stem", 3, 1f, false));
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Boomerang Cap", "The enemy throws their cap towards you", 2, 1.25f, false));
-        AddToMoveSet(new Attack(AttackType.ALL, "Spore'n Rain", "Poisonous spore particles begin to fill the air", 2, 2f, false));
+        AddToMoveSet(new Attack(TargetArea.SINGLE, "Stem Slap", "The enemy body slams you with their stem", 3, 1f, false));
+        AddToMoveSet(new Attack(TargetArea.SINGLE, "Boomerang Cap", "The enemy throws their cap towards you", 2, 1.25f, false));
+        AddToMoveSet(new Attack(TargetArea.ALL, "Spore'n Rain", "Poisonous spore particles begin to fill the air", 2, 2f, false));
     }
 }

@@ -19,6 +19,7 @@ TagManager:
   - TickIcon
   - UIHeadReference
   - InfoPanel
+  - PauseMenu
   layers:
   - Default
   - TransparentFX

@@ -21,6 +21,7 @@ public class HealthText : MonoBehaviour {
         {
             text = GetComponent<Text>();
             monsterController = referenceMonster.GetComponent<MonsterController>();
+            monsterController.SetHealthTextObject = this.gameObject;
             cameraBehavior = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraBehavior>();
             text.text = "";
 
@@ -38,21 +39,16 @@ public class HealthText : MonoBehaviour {
         }
     }
 
-    public void FadeIn()
-    {
-        StartCoroutine(FadeInRoutine());
-    }
-
     IEnumerator DeathFade()
     {
-        for (float f = 1f; f > 0f; f -= 0.005f)
+        for (float f = 1f; f > 0f; f -= 0.05f)
         {
-            text.color = new Color(1, 1, 1, f); 
+            text.color = new Color(1, 1, 1, f);
             yield return null;
         }
     }
 
-    private IEnumerator FadeInRoutine()
+    IEnumerator FadeInRoutine()
     {
         // fade from transparent to opaque
         for (float i = 0; i <= 2; i += Time.deltaTime)
@@ -62,31 +58,25 @@ public class HealthText : MonoBehaviour {
         }
     }
 
-    private IEnumerator FadeOutRoutine()
-    {
-        for (float i = 1; i >= 0; i -= Time.deltaTime)
-        {
-            // set color with i as alpha
-            text.color = new Color(1, 1, 1, i);
-            yield return null;
-        }
-    }
-
     // Update is called once per frame
     void Update () {
         if (cameraBehavior.cameraIntroIsDone == true)
         {
-            if (monsterController.monster.IsDead)
+            if (monsterController.monsterState == MonsterController.State.DEAD)
             {
                 StartCoroutine(DeathFade());
-                text.text = "HP: 0/" + maxHealth;
+            }
+
+            if (monsterController.monster.IsDead)
+            {
+                text.text = "HP: 0 /" + maxHealth;
             }
             else
             {
                 health = monsterController.currentHealth;
                 maxHealth = monsterController.maxHealth;
                 text.text = "HP: " + health + " / " + maxHealth;
-                FadeIn();
+                StartCoroutine(FadeInRoutine());
             }
         }
 

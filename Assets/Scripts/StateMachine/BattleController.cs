@@ -9,13 +9,23 @@ public class BattleController : MonoBehaviour {
     GaugeTickController gaugeTickController;
     PlayerTickController playerTickController;
 
+
     public enum State
     {
+        BEGIN,
         RUN,
         ENDCONDITION
     }
 
-    public State battleState;
+    [SerializeField]
+    private State battleState;
+    [SerializeField]
+    bool paused;
+    [SerializeField]
+    private bool monsterAttacking;
+
+    [SerializeField]
+    HandleTurn turnReference;
 
     //used for monster queueing
     public List<HandleTurn> turnList = new List<HandleTurn>();
@@ -23,14 +33,15 @@ public class BattleController : MonoBehaviour {
     public List<GameObject> FriendliesInBattle = new List<GameObject>();
 
     //current turn data
-    [SerializeField]
-    HandleTurn turnReference;
+
     [SerializeField]
     List<GameObject> targets;
     [SerializeField]
     int damage;
     [SerializeField]
     int newReferenceIndex;
+    [SerializeField]
+    private bool isPaused;
 
     public MonsterController monsterControllerA;
     public MonsterController monsterControllerB;
@@ -59,17 +70,40 @@ public class BattleController : MonoBehaviour {
     
     public bool isBattling;
     public bool playerTurn;
-    bool paused;
     public float threshold = 1.0f;
 
-    //PerformAction battleState;
+    public bool PauseGame
+    {
+        get
+        {
+            return isPaused;
+        }
+        set
+        {
+            isPaused = value;
 
-    //public enum PerformAction
-    //{
-    //    WAIT,               //preparing or idling until information recieved
-    //    TAKEACTION,         //doing the action
-    //    EXECUTEACTION       //wait until action is completed
-    //}
+            if (isPaused)
+            {
+                Time.timeScale = 0;
+            }
+            else
+            {
+                Time.timeScale = 1;
+            }
+        }
+    }
+
+    public bool MonsterIsAnimating
+    {
+        get { return monsterAttacking; }
+        set { monsterAttacking = value; }
+    }
+
+    public State BattleState
+    {
+        get { return battleState; }
+        set { battleState = value; }
+    }
 
     //used to normalize threshold based upon their speeds
     public void ThresholdUpdate(float value)
@@ -77,14 +111,6 @@ public class BattleController : MonoBehaviour {
         if(value > threshold)
         {
             threshold = value * 3;
-        }
-    }
-
-    public void PauseMonsters()
-    {
-        foreach (GameObject monster in EnemiesInBattle)
-        {
-            monster.GetComponent<MonsterController>().pause = true;
         }
     }
 
@@ -104,30 +130,15 @@ public class BattleController : MonoBehaviour {
         set { isBattling = value;  }
     }
 
-    public bool IsPaused
-    {
-        get { return paused; }
-        set { paused = value;  }
-    }
-
-    public void PauseSpeedsForEnemies(bool value)
-    {
-        //pause increment of all other monsters
-        foreach (GameObject monster in EnemiesInBattle)
-        {
-            monster.GetComponent<MonsterController>().pause = value;
-        }
-    }
-
     public void PauseSpeedsForAllMonsters(bool value)
     {
         foreach (GameObject monster in FriendliesInBattle)
         {
-            monster.GetComponent<MonsterController>().pause = value;
+            monster.GetComponent<MonsterController>().isSpeedPaused = value;
         }
         foreach (GameObject monster in EnemiesInBattle)
         {
-            monster.GetComponent<MonsterController>().pause = value;
+            monster.GetComponent<MonsterController>().isSpeedPaused = value;
         }
 
     }
@@ -190,6 +201,7 @@ public class BattleController : MonoBehaviour {
         {
             mainCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         }
+
         //setup player components
         //monsterControllerPlayer = player.GetComponent<MonsterController>();
         CreateProgressTickFor(player);
@@ -199,6 +211,7 @@ public class BattleController : MonoBehaviour {
         playerController = player.GetComponent<MonsterController>();
         playerController.team = MonsterController.Team.PLAYER;
         FriendliesInBattle.Add(player);
+
 
         //Now setup enemy components and determine number of enemies
         numberOfEnemies = Random.Range(0, 3);
@@ -284,50 +297,61 @@ public class BattleController : MonoBehaviour {
 
     }
 
-    //public void ExecuteTurnFor(GameObject monster)
-    //{
-    //    List<GameObject> targets = turnList[0].targets;
+    void DoCancelAttack(GameObject targetedMonster, MonsterController theirMonsterController)
+    {
+        Debug.Log("Enemy attack canceld!");
+        theirMonsterController.ResetAttack();
+        theirMonsterController.Damage(damage);
+        SpawnBattleTextAbove(targetedMonster);
+        SpawnBattleTextAboveWithString(targetedMonster, "CANCELED");
+    }
 
-    //    //Design Decision: check if card can cancel (assume all cards can and add bool later)
-    //    //check if canceling attack targets are on diff team if so do not cancel
-    //    //check if this monster is owner if index 0 otherwise toss out index 0
+    void DoNormalAttack(GameObject targetedMonster, MonsterController theirMonsterController)
+    {
+        theirMonsterController.Damage(damage);
+        SpawnBattleTextAbove(targetedMonster);
+    }
 
-    //    //create ui damage text above targeted monsters
-    //    SpawnBattleTextAboveEach(targets);
-    //    //send damage to targeted GO controller & Reset monsters speed / charge stats 
+    IEnumerator BeginAttack(GameObject attacker, GameObject defender, float duration)
+    {
+        float startTime;
+        float totalDistance;
+        Vector3 startPos = attacker.transform.position;
+        Vector3 endPos = defender.transform.position;
 
-    //    foreach (GameObject targetedMonster in targets)
-    //    {
-    //        //MonsterController targetedMonstersController = targetedMonster.GetComponent<MonsterController>();
-    //        //if (MonstersAreSameTeam(monster, targetedMonster))
-    //        //{
-    //        //    //swap places and play index 0 then dont cancel
-    //        //}
-    //        //else
-    //        //{
-    //        //    if (targetedMonstersController.isCharingToAttack)
-    //        //    {
-    //        //        //Cancel and reset the enemies attack
-    //        //        targetedMonstersController.ResetAttack();  
-    //        //    }
-    //        //    //swap places and play index 0 then cancel
-    //        //}
-    //        targetedMonster.GetComponent<MonsterController>().Damage(turnList[0].damage);
-    //    }
+        startTime = Time.time;
+        totalDistance = Vector3.Distance(startPos, endPos);
+        yield return SingleAttack(attacker, startPos, endPos, duration);
+    }
 
-    //    turnList.RemoveAt(0);
-    //}
+    IEnumerator SingleAttack(GameObject attacker, Vector3 a, Vector3 b, float time)
+    {
+        Vector3 initialPos = attacker.transform.position;
+
+        float i = 0.0f;
+        float rate = 1.0f / time; //* speed;
+        //destination not reached
+        while( i < 1.0f)
+        {
+            i += Time.deltaTime * rate;
+            attacker.transform.position = Vector3.Lerp(a, b, i);
+            yield return null;
+        }
+
+        attacker.transform.position = initialPos;
+
+        MonsterIsAnimating = false;
+    }
 
     public void ExecuteTurnFor(GameObject monster)
     {
-        Debug.Log("Counter: " + turnList.Count);
         if(turnList.Count == 0)
         {
             return;
         }
 
         newReferenceIndex = -1;
-        PauseSpeedsForAllMonsters(true);
+        //PauseSpeedsForAllMonsters(true);
 
         //Design Decision: check if card can cancel (assume all cards can and add bool later)
         //check if canceling attack targets are on diff team if so do not cancel
@@ -340,8 +364,7 @@ public class BattleController : MonoBehaviour {
             targets = turnReference.targets;
             damage = turnReference.damage;
         }
-        //if i am queued late but charge quicker to cancel
-        //we should find this monsters attack event and use that data instead
+        //if not owner search for the data to use instead
         else
         {
             for (int i = 0; i < turnList.Count; i++)
@@ -359,6 +382,15 @@ public class BattleController : MonoBehaviour {
             }
         }
 
+        //from here on out we assume we obtained the correct data for this turn
+
+        if(turnReference.targetArea == TargetArea.SINGLE)
+        {
+            //lerp monster from their position to their targets position
+            MonsterIsAnimating = true;
+            StartCoroutine(BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f)) ;
+        }
+
         foreach (GameObject targetedMonster in targets)
         {
             MonsterController targetedMonstersController = targetedMonster.GetComponent<MonsterController>();
@@ -366,42 +398,36 @@ public class BattleController : MonoBehaviour {
             //if canceling
             if (turnReference.isCanceling)
             {
-                Debug.Log("Attack Canceling, Same Team?: " + MonstersAreDifferenTeams(monster, targetedMonster));
+                Debug.Log("Attack Canceling, Diff Team?: " + MonstersAreDifferenTeams(monster, targetedMonster));
+                
                 if (targetedMonstersController.isChargingToAttack && MonstersAreDifferenTeams(monster, targetedMonster))
                 {
-                    Debug.Log("Enemy attack canceld!");
-                    targetedMonstersController.ResetAttack();
-                    targetedMonstersController.Damage(damage);
-                    SpawnBattleTextAbove(targetedMonster);
-                    SpawnBattleTextAboveWithString(targetedMonster, "CANCELED");
+                    DoCancelAttack(targetedMonster, targetedMonstersController);
                 }
-                ////do normal damage if theyre not charging 
-                //else
-                //{
-                //    targetedMonstersController.Damage(damage);
-                //    SpawnBattleTextAbove(targetedMonster);
-                //}
 
-                //when done using data for canceling, remove it
+                //if it is an enemy but they arent charing to attack, just do normal attack
+                if (!targetedMonstersController.isChargingToAttack && MonstersAreDifferenTeams(monster, targetedMonster))
+                {
+                    DoNormalAttack(targetedMonster, targetedMonstersController);
+                }
+
+                //when done using data that we found for canceling, remove it
                 if (newReferenceIndex != -1)
                 {
                     turnList.RemoveAt(newReferenceIndex);
                 }
             }
-            //if not on the same team and not canceling then do damage as normal
+            //if not on the same team and not canceling then normal damage
             else
             {
-                targetedMonstersController.Damage(damage);
-                SpawnBattleTextAbove(targetedMonster);
+                DoNormalAttack(targetedMonster, targetedMonstersController);
             }
         }
-        //remove event for current attacker
-        
-        //if we found a different monster from earlier, make sure to remove that data as well
 
+        //remove event for current attacker
         turnList.RemoveAt(0);
         //unpause when action is complete
-        PauseSpeedsForAllMonsters(false);
+        //PauseSpeedsForAllMonsters(false);
     }
 
     void SpawnBattleTextAboveEach(List<GameObject> targets)
@@ -414,7 +440,6 @@ public class BattleController : MonoBehaviour {
             textObj.GetComponent<Text>().text = s;
 
             Vector2 canvasPos;
-            //GameObject targetedMonster = turnList[0].targets;
             //get target's position relative to canvas screen 
             Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
             // Convert screen position to Canvas / RectTransform space
@@ -433,7 +458,6 @@ public class BattleController : MonoBehaviour {
         textObj.GetComponent<Text>().text = s;
 
         Vector2 canvasPos;
-        //GameObject targetedMonster = turnList[0].targets;
         //get target's position relative to canvas screen 
         Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(monster.transform.position);
         // Convert screen position to Canvas / RectTransform space
@@ -450,7 +474,6 @@ public class BattleController : MonoBehaviour {
         textObj.GetComponent<Text>().text = s;
 
         Vector2 canvasPos;
-        //GameObject targetedMonster = turnList[0].targets;
         //get target's position relative to canvas screen 
         Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(monster.transform.position);
         // Convert screen position to Canvas / RectTransform space
@@ -475,7 +498,7 @@ public class BattleController : MonoBehaviour {
     {
         battleState = State.ENDCONDITION;
         isBattling = false;
-        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("BattleResultTextPrefab"), canvasRect.transform);
+        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("Menu/BattleResultTextPrefab"), canvasRect.transform);
         gameResultText.GetComponent<BattleResultText>().SetText("Victory!", "All enemies defeated", "Continue");
     }
 
@@ -483,7 +506,7 @@ public class BattleController : MonoBehaviour {
     {
         battleState = State.ENDCONDITION;
         isBattling = false;
-        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("BattleResultTextPrefab"), canvasRect.transform);
+        GameObject gameResultText = Instantiate(Resources.Load<GameObject>("Menu/BattleResultTextPrefab"), canvasRect.transform);
         gameResultText.GetComponent<BattleResultText>().SetText("Defeat!", "Heroes are destined to die...", "Retry");
     }
 }

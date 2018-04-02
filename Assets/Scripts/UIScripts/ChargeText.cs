@@ -5,7 +5,9 @@ using UnityEngine.UI;
 
 public class ChargeText : MonoBehaviour {
     PlayerHandController playerHandController;
-    Text text;
+    Text[] texts;
+        //title is 0
+        //value is 1
     private int charge;
     private int maxCharge;
 
@@ -16,15 +18,29 @@ public class ChargeText : MonoBehaviour {
             playerHandController = GameObject.FindGameObjectWithTag("Hand").GetComponent<PlayerHandController>();
         }
 
-        if(text == null)
+        if(texts == null)
         {
-            text = GetComponent<Text>();
+            texts = GetComponentsInChildren<Text>();
         }
     }
 
     void Start ()
     {
+        texts[0].canvasRenderer.SetAlpha(0.0f);
+        texts[1].canvasRenderer.SetAlpha(0.0f);
         //UpdateCount(3);
+        StartCoroutine(Birth());
+    }
+
+    IEnumerator Birth()
+    {
+        yield return new WaitForSeconds(2);
+        foreach (Text text in texts)
+        {
+            text.enabled = true;
+            text.CrossFadeAlpha(1.0f, 1.0f, false);
+        }
+
     }
 
     public void UpdateCount(int current, int max)
@@ -34,7 +50,7 @@ public class ChargeText : MonoBehaviour {
         //    maxCharge = current;
         //}
         charge = playerHandController.CardCharge;
-        text.text = current + "/" + max;
+        texts[1].text = current + "/" + max;
     }
 
 }

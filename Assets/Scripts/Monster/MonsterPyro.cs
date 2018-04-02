@@ -16,8 +16,8 @@ public class MonsterPyro : MonsterBase
         this.baseSpeed = SPD;
         this.baseType = BaseType.PYRO;
 
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Wick Lash", "The enemy lashes their wick at you", 3, 1f,false));
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Inferno Flash", "The enemy quickly charges towards you!", 1, 0.5f, true));
-        AddToMoveSet(new Attack(AttackType.SINGLE, "Fire Cannon", "An incoming wave of fire aims at your direction", 2, 1.75f, false));
+        AddToMoveSet(new Attack(TargetArea.SINGLE, "Wick Lash", "The enemy lashes their wick at you", 3, 1f,false));
+        AddToMoveSet(new Attack(TargetArea.SINGLE, "Inferno Flash", "The enemy quickly charges towards you!", 1, 0.5f, true));
+        AddToMoveSet(new Attack(TargetArea.SINGLE, "Fire Cannon", "An incoming wave of fire aims at your direction", 2, 1.75f, false));
     }
 }

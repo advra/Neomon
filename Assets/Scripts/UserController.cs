@@ -3,49 +3,66 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class UserController : MonoBehaviour {
+
     [SerializeField]
-    private GameObject selectedObject;
+    private GameObject PauseMenu;
+    BattleController battleController;
     [SerializeField]
-    private GameObject lastSelectedObject;
-    private RaycastHit hitInfo;
-    private RaycastHit2D hit2D;
-    private Ray screenMouseRay;
-    
-    public GameObject SelectedObject
+    private bool menuActive;
+    [SerializeField]
+    private bool userturn;
+
+    public bool IsUsersTurn
     {
-        get { return selectedObject; }
+        get { return userturn; }
+        set { userturn = value;  }
     }
 
-    public GameObject LastSelectedObject
+    public bool MenuIsActive
     {
-        get { return lastSelectedObject; }
+        get { return menuActive; }
+        set { menuActive = value; }
     }
-    // Use this for initialization
-    void Start () {
-		
-	}
+
+    public void Start()
+    {
+        if(battleController == null)
+        {
+            battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        }
+
+        PauseMenu = Instantiate(Resources.Load<GameObject>("Menu/PauseMenuPrefab"), battleController.canvasRect.transform);
+        Canvas canvas = PauseMenu.GetComponent<Canvas>();
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = 20;
+        PauseMenu.SetActive(false);
+    }
 
     void Update()
     {
-        MouseHitsCollider();
+        if (Input.GetKeyDown(KeyCode.Escape)){
+            if (PauseMenu.activeInHierarchy)
+            {
+                MenuIsActive = false;
+                ContinueGame();
+            }
+            else
+            {
+                MenuIsActive = true;
+                PauseGame();
+            }
+        }
     }
 
-    public bool MouseHitsCollider()
+    public void ContinueGame()
     {
-        hitInfo = new RaycastHit();
-        screenMouseRay = Camera.main.ScreenPointToRay(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0.0f));
-        hit2D = Physics2D.GetRayIntersection(screenMouseRay);
-        if (hit2D)
-        {
-            selectedObject = hit2D.transform.gameObject;
-            return true;
-        }
-        else
-        {
-            selectedObject = null;
-            return false;
-        }
+        PauseMenu.SetActive(false);
+        battleController.PauseGame = false;
     }
 
-
+    public void PauseGame()
+    {
+        PauseMenu.SetActive(true);
+        battleController.PauseGame = true;
+    }
 }

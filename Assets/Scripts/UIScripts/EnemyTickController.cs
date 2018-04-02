@@ -144,11 +144,13 @@ public class EnemyTickController : MonoBehaviour
     void Start()
     {
         if (monsterController == null)
-            Debug.Log("monsterController for Tick GUI is null");
+        {
+            monsterController = trackedMonster.GetComponent<MonsterController>();
+        }
+            
         differenceBound = windowMaxBound - windowMinBound;
         rangeWaitBound = 100.0f - windowMinBound;
         rangeChargeBound = windowMaxBound - 100.0f;
-        monsterController = trackedMonster.GetComponent<MonsterController>();
         positionY = transform.localPosition.y;
         //SetTickIcon();
     }

@@ -25,6 +25,9 @@ public class MonsterController : MonoBehaviour
     public Image[] tickImages;
     public Material monsterMat;
 
+    [SerializeField]
+    private GameObject healthTextGameObject;
+
     public enum State
     {
         WAITING,    //waiting until turn
@@ -47,7 +50,7 @@ public class MonsterController : MonoBehaviour
     [SerializeField]
     public List<Attack> moveSet;
     public bool done;
-    public bool pause;
+    public bool isSpeedPaused;
     bool targeted;
     public bool isDead;
     public bool isChargingToAttack;
@@ -94,6 +97,11 @@ public class MonsterController : MonoBehaviour
         isChargingToAttack = false;
         monsterState = State.WAITING;
         done = false;
+    }
+
+    public GameObject SetHealthTextObject
+    {
+        set { healthTextGameObject = value;  }
     }
 
     public float CurrentSpeed
@@ -145,6 +153,38 @@ public class MonsterController : MonoBehaviour
 
     }
 
+    public void IsPlayerTargeted(bool b)
+    {
+        if (tickCanvas == null)
+        {
+            tickCanvas = trackingTickObject.GetComponent<Canvas>();
+        }
+
+        if (b)
+        {
+            Material mat = GetComponent<Renderer>().material;
+            mat.color = new Color(0.5f, 1, 0.5f, 1);            //light green
+
+            tickImages = trackingTickObject.GetComponentsInChildren<Image>();
+            tickImages[0].color = Color.green;
+            tickImages[1].color = new Color(0.5f, 1, 0.5f, 1);
+            tickCanvas.overrideSorting = true;
+            tickCanvas.sortingOrder = 3;
+        }
+        else
+        {
+            Material mat = GetComponent<Renderer>().material;
+            mat.color = Color.white;
+
+            tickImages = trackingTickObject.GetComponentsInChildren<Image>();
+            tickImages[0].color = Color.white;
+            tickImages[1].color = Color.white;
+
+            tickCanvas.overrideSorting = false;
+        }
+
+    }
+
     public void Damage(int amount)
     {
         this.currentHealth -= amount;
@@ -164,9 +204,6 @@ public class MonsterController : MonoBehaviour
 
             if (team == Team.PLAYER)
             {
-                //playerController.currentUserState = PlayerController.PlayerState.DEAD;
-                //pause all enemies
-                BC.PauseMonsters();
                 //display losing text
                 BC.PlayerLose();
             }
@@ -195,29 +232,40 @@ public class MonsterController : MonoBehaviour
     void DoDeath()
     {
         //Hide Tick
+        //Design Decision: Animate an X crossing out animation
         trackingTickObject.SetActive(false);
         //plays fade animation
+        //healthTextGameObject.GetComponent<HealthText>().StartCoroutine(DeathFade());
         StartCoroutine(DeathFade());
+        
     }
 
     void CheckAttack()
     {
+        if (userController.IsUsersTurn)
+        {
+            return;
+        }
+
         if (currentSpeed > BC.Threshold)
         {
-            BC.IsPaused = true;
+            BC.PauseSpeedsForAllMonsters(true);
             Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
         }
-    }
-
-    public void ResetTurn(int threshold)
-    {
-        currentSpeed -= threshold;
     }
 
     //randomly select an attack in their move list
     void SelectAttack()
     {
+        if (userController.IsUsersTurn)
+        {
+            return;
+        }
+
         BC.PauseSpeedsForAllMonsters(true);
+
+        //prevent enemies from continue attack until user does something on their turn
+
         //randomly select attack from attack set for enemies
         if (team == Team.ENEMY)
         {
@@ -227,7 +275,7 @@ public class MonsterController : MonoBehaviour
             bool isCanceling = moveSet[random].isCanceling;
             List<GameObject> target = new List<GameObject>();
             target.Add(BC.player);
-            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].attackType, moveSet[random].damage, chargeDuration, isCanceling);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling);
             BC.AddTurnToQueue(turn);
             //Begin charging
             EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
@@ -238,9 +286,8 @@ public class MonsterController : MonoBehaviour
         //wait until card controller changes users state from here
         if (team == Team.PLAYER)
         {
-            //Necessary to prevent monsters from increasing their speeds when its players turn
-            BC.PauseSpeedsForAllMonsters(true);
-            //Debug.Log("Waiting for user to select cards");
+            userController.IsUsersTurn = true;
+            //BC.PauseSpeedsForAllMonsters(false); is set in card controller
         }
     }
 
@@ -266,8 +313,8 @@ public class MonsterController : MonoBehaviour
             //for now we will just a random selection within our database
             //We can expand on this later
             int randomIndex = Random.Range(0, MonsterInfoDatabase.monsters.Count);   //returns 0 - 1
-            //monster = MonsterInfoDatabase.monsters[randomIndex];
-            monster = MonsterInfoDatabase.monsters[1];
+            monster = MonsterInfoDatabase.monsters[randomIndex];
+            //monster = MonsterInfoDatabase.monsters[1];
             //get moves from the "deck" of the enemy
             moveSet = monster.MoveSet;
             //Set tick icon
@@ -297,14 +344,19 @@ public class MonsterController : MonoBehaviour
         float variance = Random.Range(-.5f,.5f);
         baseSpeed = monster.Speed + variance;
         BC.ThresholdUpdate(baseSpeed);
-        Debug.Log(monster.Print);
+        //Debug.Log(monster.Print);
     }
 
     void IncreaseSpeed()
     {
-        //this will prevent speed increasing when still user's turn
-        //Note: May need ot make player exclusive
-        if (pause || (BC.battleState == BattleController.State.ENDCONDITION))
+        //do not do anything while animations are occuring during attack execution
+        if (BC.MonsterIsAnimating)
+        {
+            return;
+        }
+
+        //this will prevent speed increasing when pause menu is open, end of game, or user's turn
+        if (BC.PauseGame || userController.IsUsersTurn || (BC.BattleState == BattleController.State.ENDCONDITION) || (BC.BattleState == BattleController.State.BEGIN))
         {
             return;
         }
@@ -321,8 +373,14 @@ public class MonsterController : MonoBehaviour
 
     void ChargeSpeed(float durationInSeconds)
     {
+        //do not do anything while animations are occuring during attack execution
+        if (BC.MonsterIsAnimating)
+        {
+            return;
+        }
+
         //this will prevent speed increasing when still user's turn
-        if (pause)
+        if (BC.PauseGame || userController.IsUsersTurn || (BC.BattleState == BattleController.State.ENDCONDITION))
         {
             return;
         }
@@ -345,13 +403,17 @@ public class MonsterController : MonoBehaviour
 
     void OnMouseEnter()
     {
+        if (userController.MenuIsActive || (BC.BattleState == BattleController.State.ENDCONDITION) || (BC.BattleState == BattleController.State.BEGIN))
+        {
+            return;
+        }
+
         if (isDead)
             return;
 
         if(team == Team.PLAYER)
         {
-            Material mat = GetComponent<Renderer>().material;
-            mat.color = new Color(0.5f, 1, 0.5f, 1); 
+            IsPlayerTargeted(true);
             return;
         }
         else
@@ -364,8 +426,11 @@ public class MonsterController : MonoBehaviour
 
     void OnMouseExit()
     {
+
         if (isDead)
+        {
             return;
+        }  
 
         IsTargeted(false);
         RemoveInfo();
@@ -387,7 +452,7 @@ public class MonsterController : MonoBehaviour
             //unhighlight tick
             trackingTickObject.GetComponent<Image>().color = Color.white;
             //move info out of camera frame
-            panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 300);
+            panelInfoObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 400);
         }
 
     }
@@ -462,17 +527,19 @@ public class MonsterController : MonoBehaviour
 
     void Awake()
     {
-        BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
-        animator = GetComponent<RuntimeAnimatorController>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (BC == null)
+        {
+            BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        }
+        
         if (animator == null)
         {
-            Debug.Log(this.gameObject + " monster animator is null");
+            animator = GetComponent<RuntimeAnimatorController>();
         }
 
         if (spriteRenderer == null)
         {
-            Debug.Log(this.gameObject + " monster sprite renderer is null");
+            spriteRenderer = GetComponent<SpriteRenderer>();
         }
     }
 
@@ -513,22 +580,5 @@ public class MonsterController : MonoBehaviour
             default:
                 break;
         }
-
-        ////simulate poison (for testing the hp)
-        //if (BC.IsBattling & !BC.IsPaused)
-        //{
-        //    CheckAttack();
-
-        //    //Used for testing purposes
-        //    //StartCoroutine(SimulatePoison());
-
-        //    //Need to revisit. Works as intended but mouse hover = multiple calls which conflict the animation.
-        //    if ((targeted))
-        //    {
-        //        lerpedColor = Color.Lerp(Color.white, new Color(1.0f, 0.0f, 0.0f, 1.0f), Mathf.PingPong(Time.time, 0.5f));
-        //        spriteRenderer.color = lerpedColor;
-        //    }
-        //}
-
     }
 }

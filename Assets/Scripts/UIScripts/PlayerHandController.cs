@@ -6,10 +6,11 @@ using UnityEngine.UI;
 public class PlayerHandController : MonoBehaviour {
     Card card;
     MonsterController playerController;
+    UserController userController;
     BattleController BC;
 
     public GameObject cardPrefab;
-    public bool isPlayerTurn;
+    //public bool isPlayerTurn;
     public bool isDrawing;
     public bool initialDraw;
 
@@ -133,6 +134,7 @@ public class PlayerHandController : MonoBehaviour {
             if (hand.Count != maxHand)
             {
                 initialDraw = true;
+
                 //draw as normal
                 if (deck.Count != 0)
                 {
@@ -153,8 +155,6 @@ public class PlayerHandController : MonoBehaviour {
                     cardController.isCanceling = deck[0].isCanceling;
                     cardController.PlayerHand = this.gameObject;
                     Image cardImage = cardObj.GetComponent<Image>();
-                    //cardImage.sprite = Resources.Load<Sprite>("Sprites/" + cardController.cardSprite);
-                    //cardImage.sprite = deck[0].artwork;
                     //visually format image
                     cardInHands.Add(cardObj);
                     cardController.HandIndex = cardsInHandLength;
@@ -189,7 +189,6 @@ public class PlayerHandController : MonoBehaviour {
             updateCount();
         }
 
-        
     }
 
     //called when card is used
@@ -275,38 +274,36 @@ public class PlayerHandController : MonoBehaviour {
         {
             cardDatabase = Resources.Load<CardDatabase>("CardDatabase");
         }
-
-        if (playerController == null)
-        {
-            playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
-        }
-        
+        //if (playerController == null)
+        //{
+        //    playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
+        //}
         if(chargeText == null)
         {
             chargeText = UIChargeText.GetComponent<ChargeText>();
+        }
+        if(userController == null)
+        {
+            userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
         }
     }
 
     // Use this for initialization
     void Start()
     {
-        if (playerController == null)
-        {
-            Debug.Log("playerController for HandController is null");
-        }
         if (BC == null)
         {
             BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
         }
-        parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
+        
         if (parentCanvas == null)
         {
-            Debug.Log("Parent canvas is null! GUI Objects may not properly be attached");
+            parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
         }
-        cardPrefab = Resources.Load<GameObject>("CardPrefab");
+        
         if (cardPrefab == null)
         {
-            Debug.Log("Card Prefab is Null. Cannot find it in Resources folder.");
+            cardPrefab = Resources.Load<GameObject>("CardPrefab");
         }
 
         cardInHands = new List<GameObject>();
@@ -338,8 +335,14 @@ public class PlayerHandController : MonoBehaviour {
     //user clicks this to end their turn
     public void EndTurn()
     {
-        isPlayerTurn = false;
+        userController.IsUsersTurn = false;
         BC.PauseSpeedsForAllMonsters(false);
+
+        if (playerController == null)
+        {
+            playerController = BC.playerController;
+        }
+
         playerController.ResetAttack();
     }
 
@@ -377,7 +380,6 @@ public class PlayerHandController : MonoBehaviour {
     //draw cards for first time then 1 card each turn after
     public void SetupHand()
     {
-        isPlayerTurn = true;
         if (!initialDraw)
         {
             Draw(3);

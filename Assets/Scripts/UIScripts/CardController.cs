@@ -20,6 +20,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     PlayerHandController playerHandController;
     MonsterController playerController;
     MonsterController monsterController;
+    UserController userController;
 
     //not to be confused with the Hand Canvas
     Canvas canvas;
@@ -65,27 +66,30 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     void Awake()
     {
-        cardImage = GetComponent<Image>();
         if(cardImage == null){
-            Debug.Log("No sprite Imgae found!");
+            cardImage = GetComponent<Image>();
         }
-        canvas = GetComponent<Canvas>();
+        
         if(canvas == null){
-            Debug.Log("This Card does not have a canvas for sorting!");
+            canvas = GetComponent<Canvas>();
         }
-        playerHandController = GetComponentInParent<PlayerHandController>();
+        
         if(playerHandController == null){
-            Debug.Log("playerHandController is null");
+            playerHandController = GetComponentInParent<PlayerHandController>();
         }
-        battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        
         if (battleController == null)
         {
-            Debug.Log("battleController is null");
+            battleController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
         }
-        playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
+        
         if (playerController == null)
         {
-            Debug.Log("playerController is null");
+            playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
+        }
+        if(userController == null)
+        {
+            userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
         }
         //used to reference all the text gameobjects
         texts = GetComponentsInChildren<Text>();
@@ -111,11 +115,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
         texts[3].text = description;
         //texts[3].text = description;
-        if(targetArea == TargetArea.single)
+        if(targetArea == TargetArea.SINGLE)
         {
             images[1].sprite = Resources.Load<Sprite>("Sprites/type_single");
         }
-        if (targetArea == TargetArea.all)
+        if (targetArea == TargetArea.ALL)
         {
             images[1].sprite = Resources.Load<Sprite>("Sprites/type_all");
         }
@@ -133,7 +137,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         RescaleCard(distanceFactor);
         VaryTranspaency(distanceFactor);
 
-        if(targetArea == TargetArea.all)
+        if(targetArea == TargetArea.ALL)
         {
             foreach(GameObject monster in battleController.EnemiesInBattle)
             {
@@ -171,7 +175,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
 
         //prevent player from attacking himself unless it is a "self or heal card"
-        if(targetArea == TargetArea.single)
+        if(targetArea == TargetArea.SINGLE)
         {
             if (IsPlayerValidTarget() == battleController.player)
             {
@@ -188,10 +192,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             HideCard();
             //this will destroy the card
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
+            userController.IsUsersTurn = false;
             battleController.PauseSpeedsForAllMonsters(false);
             battleController.HideCombatUI();
             //if a single target card then apply to one monster
-            if (targetArea == TargetArea.single)
+            if (targetArea == TargetArea.SINGLE)
             {
                 SingleTargetAttack();
             }
@@ -203,7 +208,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
         //if mouse not hovering above a monster check for battlefield
         //Check and apply any AoE cards if user drags and drops a card in the battlefield 
-        else if (targetArea != TargetArea.single)
+        else if (targetArea != TargetArea.SINGLE)
         {
             if ((Input.mousePosition.y > Screen.height * 0.45f) )
             {
@@ -213,6 +218,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 playerHandController.AdjustCost(cost);
                 HideCard();
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
+                userController.IsUsersTurn = false;
                 battleController.PauseSpeedsForAllMonsters(false);
                 DetermineTargets();
             }
@@ -438,7 +444,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     {
         //ensure this card is removed
         state = State.DESTROY;
-        if (targetArea == TargetArea.all)
+        if (targetArea == TargetArea.ALL)
         {
             //setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
@@ -452,15 +458,15 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
 
         }
-        else if (targetArea == TargetArea.line)
+        else if (targetArea == TargetArea.LINE)
         {
             //logic needed in the future
         }
-        else if (targetArea == TargetArea.split)
+        else if (targetArea == TargetArea.SINGLE)
         {
             //logic needed in the future
         }
-        else if (targetArea == TargetArea.random)
+        else if (targetArea == TargetArea.RANDOM)
         {
             //Random.Range(min, max + 1)
             int randomTarget = Random.Range(0, battleController.numberOfEnemies + 1);
