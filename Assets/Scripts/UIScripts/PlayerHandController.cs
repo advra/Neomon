@@ -59,6 +59,11 @@ public class PlayerHandController : MonoBehaviour {
         SELECTING
     }
 
+    public void AddCardToDeck()
+    {
+        deck.Add(cardDatabase.cards[3]);
+    }
+
     public int CardCharge
     {
         get { return cardCharge;  }
@@ -131,6 +136,7 @@ public class PlayerHandController : MonoBehaviour {
     {
         for(int i = 0; i < number; i++)
         {
+            Debug.Log("Drawing card " + i);
             if (hand.Count != maxHand)
             {
                 initialDraw = true;
@@ -153,6 +159,7 @@ public class PlayerHandController : MonoBehaviour {
                     cardController.cost = deck[0].cost;
                     cardController.chargeTime = deck[0].charge;
                     cardController.isCanceling = deck[0].isCanceling;
+                    cardController.isChainCombo = deck[0].chainCombo;
                     cardController.PlayerHand = this.gameObject;
                     Image cardImage = cardObj.GetComponent<Image>();
                     //visually format image
@@ -318,12 +325,14 @@ public class PlayerHandController : MonoBehaviour {
         Card sliceCard = cardDatabase.cards[0];
         Card thrustCard = cardDatabase.cards[1];
         Card entangleCard = cardDatabase.cards[2];
+        Card firstStrike = cardDatabase.cards[3];
 
         //add cards
         for (int i = 0; i < 5; i++)
         {
             deck.Add(sliceCard);
             deck.Add(thrustCard);
+            deck.Add(firstStrike);
         }
         deck.Add(entangleCard);
 
@@ -343,7 +352,18 @@ public class PlayerHandController : MonoBehaviour {
             playerController = BC.playerController;
         }
 
-        playerController.ResetAttack();
+        //this will ensure that if we have something like a combo card it will execute it 
+        if(playerController.actions.Count == 0)
+        {
+            playerController.ResetAttack();
+        }
+        else
+        {
+            playerController.monsterState = MonsterController.State.CHARGING;
+            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
+        }
+
     }
 
     public bool PlayerHasEnoughCharges(int cost)

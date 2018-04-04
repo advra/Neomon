@@ -28,7 +28,6 @@ public class BattleController : MonoBehaviour {
     HandleTurn turnReference;
 
     //used for monster queueing
-    public List<HandleTurn> turnList = new List<HandleTurn>();
     public List<GameObject> EnemiesInBattle = new List<GameObject>();
     public List<GameObject> FriendliesInBattle = new List<GameObject>();
 
@@ -275,12 +274,6 @@ public class BattleController : MonoBehaviour {
         return true;
     }
 
-    //populates turn list
-    public void AddTurnToQueue(HandleTurn turn)
-    {
-        turnList.Add(turn);
-    }
-
     //compares if current monster (with faster speed) queued up before the one who charged into queue first are same team
     //if theyre on the same team, let faster monster play their attack
     //otherwise play current monsters attack then remove queued monster from list
@@ -295,21 +288,6 @@ public class BattleController : MonoBehaviour {
             return false;
         }
 
-    }
-
-    void DoCancelAttack(GameObject targetedMonster, MonsterController theirMonsterController)
-    {
-        Debug.Log("Enemy attack canceld!");
-        theirMonsterController.ResetAttack();
-        theirMonsterController.Damage(damage);
-        SpawnBattleTextAbove(targetedMonster);
-        SpawnBattleTextAboveWithString(targetedMonster, "CANCELED");
-    }
-
-    void DoNormalAttack(GameObject targetedMonster, MonsterController theirMonsterController)
-    {
-        theirMonsterController.Damage(damage);
-        SpawnBattleTextAbove(targetedMonster);
     }
 
     public IEnumerator BeginAttack(GameObject attacker, GameObject defender, float duration)
@@ -339,123 +317,16 @@ public class BattleController : MonoBehaviour {
         }
 
         attacker.transform.position = initialPos;
-
         MonsterIsAnimating = false;
+        attacker.GetComponent<MonsterController>().ExecuteTurn();   //check to see if we have anything left in our queue
     }
 
-    public void ExecuteTurnFor(GameObject monster)
-    {
-        if(turnList.Count == 0)
-        {
-            return;
-        }
-
-        newReferenceIndex = -1;
-        //PauseSpeedsForAllMonsters(true);
-
-        //Design Decision: check if card can cancel (assume all cards can and add bool later)
-        //check if canceling attack targets are on diff team if so do not cancel
-        //check if this monster is owner if index 0 otherwise toss out index 0
-
-        //if this monster calling the even owns data then assign
-        if (turnList[0].owner == monster)
-        {
-            turnReference = turnList[0];
-            targets = turnReference.targets;
-            damage = turnReference.damage;
-        }
-        //if not owner search for the data to use instead
-        else
-        {
-            for (int i = 0; i < turnList.Count; i++)
-            {
-                if (turnList[i].owner == monster)
-                {
-                    //use this turn data instead 
-                    //remove the canceled monsters turn at the very last line of this function
-                    turnReference = turnList[i];
-                    targets = turnReference.targets;
-                    damage = turnReference.damage;
-                    newReferenceIndex = i;
-                    //turnList.RemoveAt(i);
-                }
-            }
-        }
-
-        //from here on out we assume we obtained the correct data for this turn
-
-        if(turnReference.targetArea == TargetArea.SINGLE)
-        {
-            //lerp monster from their position to their targets position
-            MonsterIsAnimating = true;
-            StartCoroutine(BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f));
-        }
-
-        foreach (GameObject targetedMonster in targets)
-        {
-            MonsterController targetedMonstersController = targetedMonster.GetComponent<MonsterController>();
-
-            //if canceling
-            if (turnReference.isCanceling)
-            {
-                Debug.Log("Attack Canceling, Diff Team?: " + MonstersAreDifferenTeams(monster, targetedMonster));
-                
-                if (targetedMonstersController.isChargingToAttack && MonstersAreDifferenTeams(monster, targetedMonster))
-                {
-                    DoCancelAttack(targetedMonster, targetedMonstersController);
-                }
-
-                //if it is an enemy but they arent charing to attack, just do normal attack
-                if (!targetedMonstersController.isChargingToAttack && MonstersAreDifferenTeams(monster, targetedMonster))
-                {
-                    DoNormalAttack(targetedMonster, targetedMonstersController);
-                }
-
-                //when done using data that we found for canceling, remove it
-                if (newReferenceIndex != -1)
-                {
-                    turnList.RemoveAt(newReferenceIndex);
-                }
-            }
-            //if not on the same team and not canceling then normal damage
-            else
-            {
-                DoNormalAttack(targetedMonster, targetedMonstersController);
-            }
-        }
-
-        //remove event for current attacker
-        turnList.RemoveAt(0);
-        //unpause when action is complete
-        //PauseSpeedsForAllMonsters(false);
-    }
-
-    void SpawnBattleTextAboveEach(List<GameObject> targets)
-    {
-        foreach (GameObject targetedMonster in targets)
-        {
-            GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
-            textObj.transform.localScale = Vector3.one;
-            string s = turnList[0].damage.ToString();
-            textObj.GetComponent<Text>().text = s;
-
-            Vector2 canvasPos;
-            //get target's position relative to canvas screen 
-            Vector2 screenPointToTarget = Camera.main.WorldToScreenPoint(targetedMonster.transform.position);
-            // Convert screen position to Canvas / RectTransform space
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPointToTarget, null, out canvasPos);
-            //move text to Game object's position
-            textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
-        }
-    }
-
-    public void SpawnBattleTextAbove(GameObject monster)
+    public void SpawnBattleTextAbove(GameObject monster, int damage)
     {
 
         GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
         textObj.transform.localScale = Vector3.one;
-        string s = turnList[0].damage.ToString();
-        textObj.GetComponent<Text>().text = s;
+        textObj.GetComponent<Text>().text = damage.ToString();
 
         Vector2 canvasPos;
         //get target's position relative to canvas screen 

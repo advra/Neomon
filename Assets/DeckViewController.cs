@@ -82,7 +82,8 @@ public class DeckViewController : MonoBehaviour {
 
         if(blankImagePrefab == null)
         {
-            blankImagePrefab = Resources.Load<GameObject>("Menu/BlankImage");
+            //blankImagePrefab = Resources.Load<GameObject>("Menu/BlankImage");
+            blankImagePrefab = Resources.Load<GameObject>("Menu/CardWithEmptyObject");
         }
     }
 
@@ -150,7 +151,7 @@ public class DeckViewController : MonoBehaviour {
         }
 
         elements = new List<GameObject>();
-        elementContainerRectTransform.sizeDelta = new Vector2(676.6f, 312.2f);
+        elementContainerRectTransform.sizeDelta = new Vector2(554.07f, 312.2f);
 
     }
 
@@ -217,17 +218,17 @@ public class DeckViewController : MonoBehaviour {
 
             //add a dummy gameobject then attach our card images as child to it otherwise scaling will act up oddly
             GameObject emptyObject = GameObject.Instantiate(blankImagePrefab, deckContainer.transform);
-            GameObject cardObj = GameObject.Instantiate(cardPrefab, emptyObject.transform);
+            //GameObject cardObj = GameObject.Instantiate(cardPrefab, emptyObject.transform);
             //required for scroll rect
-            cardObj.AddComponent<LayoutElement>();
+            emptyObject.AddComponent<LayoutElement>();
             //need to remove event listeners otherwise our "Click to scroll" wont work and user is forced with scroll wheel only
-            Destroy(cardObj.GetComponent<GraphicRaycaster>());
-            cardObj.transform.localScale *= 0.5f;
+            Destroy(emptyObject.GetComponent<GraphicRaycaster>());
+            //emptyObject.transform.localScale *= 0.5f;
             //add to element so when we close this window it will remove the objects until next time (for refreshing.. will check for drawing or changes in deck rather than destroying)
             elements.Add(emptyObject);
 
             //Apply the card attributes we need on the GameObject
-            CardController cardController = cardObj.GetComponent<CardController>();
+            CardController cardController = emptyObject.GetComponentInChildren<CardController>();
             cardController.name = cards[i].name;
             cardController.description = cards[i].description;
             cardController.damageAmount = cards[i].damage;

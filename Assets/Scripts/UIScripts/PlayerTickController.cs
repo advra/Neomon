@@ -101,7 +101,7 @@ public class PlayerTickController : MonoBehaviour
         {
             //insert pause here in the future to allow for things like animation etc.
             //execute event in queue
-            if (BC.turnList[0].owner == BC.player)
+            if (monsterController.DoneComboing)
             {
                 //BC.ExecuteTurnFor(trackedMonster);
                 done = true;
@@ -161,7 +161,6 @@ public class PlayerTickController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        //Compute();
         if (!done)
         {
             switch (state)

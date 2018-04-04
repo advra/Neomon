@@ -39,6 +39,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public int cost;
     public float chargeTime;
     public bool isCanceling;
+    public bool isChainCombo;
 
     public State state; 
     [SerializeField]
@@ -117,6 +118,12 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         //texts[0].text = cardName;         //this is for the Cost Text which we wont change
         texts[1].text = cost.ToString();
         texts[2].text = name;
+
+        if (name.Length > 10)
+        {
+            texts[2].fontSize = 30;
+        }
+
         if (description.Length > 30)
         {
             texts[3].fontSize = 20;
@@ -207,12 +214,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         if (IsValidTarget())
         {
             playerHandController.AdjustCost(cost);
+            //hide transparency of the card while we determine the attack
             HideCard();
-            //this will destroy the card
+            //Note: this will destroy the card within this method
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-            userController.IsUsersTurn = false;
-            battleController.PauseSpeedsForAllMonsters(false);
-            battleController.HideCombatUI();
+
             //if a single target card then apply to one monster
             if (targetArea == TargetArea.SINGLE)
             {
@@ -223,6 +229,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             {
                 DetermineTargets();
             }
+
+            //Check if we skip the below or continue to chain
+            CheckComboChaining();
+
         }
         //if mouse not hovering above a monster check for battlefield
         //Check and apply any AoE cards if user drags and drops a card in the battlefield 
@@ -235,10 +245,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 //This does not handle single target cards, check above if statements
                 playerHandController.AdjustCost(cost);
                 HideCard();
+                //Note: this will destroy the card within this method
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-                userController.IsUsersTurn = false;
-                battleController.PauseSpeedsForAllMonsters(false);
-                DetermineTargets();
+                DetermineTargets();                 //determine the targets to add to our monsters action queue
+                CheckComboChaining();               //check if we finish chaining cards or continue waiting
             }
             else
             {
@@ -447,13 +457,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         List<GameObject> targets = new List<GameObject>();
         targets.Add(targetedMonster);
         HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling);
-        battleController.AddTurnToQueue(turn);
-
-        //Begin charging
-        playerController.monsterState = MonsterController.State.CHARGING;
-        playerController.chargeDuration = chargeTime;
-        PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
-        playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
+        //battleController.AddTurnToQueue(turn);
+        playerController.actions.Add(turn);
     }
 
     //Called when a card is dropped on the battlefield
@@ -467,14 +472,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             //setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
             HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime, isCanceling);
-            battleController.AddTurnToQueue(turn);
-
-            //Begin charging
-            playerController.monsterState = MonsterController.State.CHARGING;
-            playerController.chargeDuration = chargeTime;
-            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
-            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
-
+            //battleController.AddTurnToQueue(turn);
+            playerController.actions.Add(turn);
         }
         else if (targetArea == TargetArea.LINE)
         {
@@ -486,27 +485,39 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
         else if (targetArea == TargetArea.RANDOM)
         {
-            //Random.Range(min, max + 1)
-            int randomTarget = Random.Range(0, battleController.numberOfEnemies + 1);
-            //ensure this card is removed
-            state = State.DESTROY;
-            //setup and store the event data
-            List<GameObject> targets = new List<GameObject>();
-            targets.Add(battleController.EnemiesInBattle[randomTarget]);
-            HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling);
-            battleController.AddTurnToQueue(turn);
-
-            //Begin charging
-            playerController.monsterState = MonsterController.State.CHARGING;
-            playerController.chargeDuration = chargeTime;
-            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
-            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
-
+            //logic needed in the future
         }
         else
         {
             Debug.Log("DetermineTargets() Error, target type not found for type: " + targetArea);
         }
+    }
+
+    //check to ensure if we can chain another card and wait for user to play a card that doesnt chain or end their turn
+    void CheckComboChaining()
+    {
+        //Well add the chain card's charge duration
+        if (isChainCombo)
+        {
+            playerController.AddDuration = chargeTime;
+            return;
+        }
+        //end the users turn and begin charging up for the combo attack
+        else
+        {
+            //hiding the Combat UI is last (otherwise it wont catch our early return when using comboes in Single and Determine Attack methods
+            battleController.HideCombatUI();
+            userController.IsUsersTurn = false;
+            battleController.PauseSpeedsForAllMonsters(false);
+
+            //Begin charging for player
+            playerController.monsterState = MonsterController.State.CHARGING;
+            playerController.chargeDuration = chargeTime;
+            PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
+            playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
+        }
+
+
     }
 
 }

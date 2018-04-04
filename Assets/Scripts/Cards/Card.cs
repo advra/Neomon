@@ -23,4 +23,5 @@ public class Card : ScriptableObject {
     public float charge;            //the amount of time in secs to charge to perform this attack
     public TargetArea targetArea;   
     public bool isCanceling;            //does this card cancel the attacks of enemies?
+    public bool chainCombo;            //does this card combo with other cards?
 }

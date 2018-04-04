@@ -9,13 +9,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d9bb13bbabd2b1b49b2f29022dd61866, type: 3}
-  m_Name: Entangle
+  m_Name: FirstStrike
   m_EditorClassIdentifier: 
-  name: Entangle
-  description: Attacks all enemies for 3 DMG
-  artwork: {fileID: 21300000, guid: 296022fda35660a4682693dfb8fd2cf8, type: 3}
-  damage: 3
-  cost: 2
-  charge: 2
-  targetArea: 1
+  name: First Strike
+  description: Playing this card first will chain it with the next card.
+  artwork: {fileID: 0}
+  damage: 2
+  cost: 0
+  charge: 0.25
+  targetArea: 0
   isCanceling: 0
+  chainCombo: 1

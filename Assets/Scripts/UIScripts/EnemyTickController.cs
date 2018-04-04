@@ -98,20 +98,12 @@ public class EnemyTickController : MonoBehaviour
         //if value is over then execute
         else
         {
-            //when at the max do nothing
-            // ChangeState(GaugeState.RESET); will be called in the monster controller
-            //if combo is complete then
-            //ChangeState(GaugeState.RESET);
-
-
-            ////insert pause here in the future to allow for things like animation etc.
-            ////execute event in queue
-            if (BC.turnList[0].owner == trackedMonster)
-            {
-                //BC.ExecuteTurnFor(trackedMonster);
-                //done = true;
-                ChangeState(GaugeState.RESET);
-            }
+            //if combo attacks / turnlist is empty after executing actions well reset this tick
+            //set in ResetAttack() of monster controller
+            //if (monsterController.DoneComboing)
+            //{
+            //    ChangeState(GaugeState.RESET);
+            //}
         }
     }
 

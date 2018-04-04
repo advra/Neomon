@@ -75,9 +75,22 @@ public class MonsterController : MonoBehaviour
     Text[] panelInfoText;
 
     //used for internal turns
-    public HandleTurn turnReference;
-    public List<HandleTurn> turnList = new List<HandleTurn>();
+    public HandleTurn previousAction;
+    public List<HandleTurn> actions = new List<HandleTurn>();
     public List<GameObject> targets = new List<GameObject>();
+    private bool comboFinish;
+    public bool combosQueued;
+
+    public float AddDuration
+    {
+        set { chargeDuration += value; }
+    }
+
+    public bool DoneComboing
+    {
+        get { return comboFinish;  }
+        set { comboFinish = value; }
+    }
 
     //at the end of every attack after executed (or canceled call this)
     public void ResetAttack()
@@ -85,6 +98,7 @@ public class MonsterController : MonoBehaviour
         if (team == Team.ENEMY)
         {
             trackingTickObject.GetComponent<EnemyTickController>().state = EnemyTickController.GaugeState.RESET;
+            DoneComboing = true;
         }
         if (team == Team.PLAYER)
         {
@@ -93,9 +107,10 @@ public class MonsterController : MonoBehaviour
                 playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             }
             playerTickController.ChangeState(PlayerTickController.GaugeState.INCREASING);
-            //playerController.currentUserState = PlayerController.PlayerState.WAITING;
+            userController.IsUsersTurn = false;
             BC.HideCombatUI();
         }
+        chargeDuration = 0.0f;
         chargeTimer = 0.0f;
         currentSpeed = 0.0f;
         isChargingToAttack = false;
@@ -299,20 +314,6 @@ public class MonsterController : MonoBehaviour
         //Debug.Log(monster.Print);
     }
 
-    void CheckAttack()
-    {
-        if (userController.IsUsersTurn)
-        {
-            return;
-        }
-
-        if (currentSpeed > BC.Threshold)
-        {
-            BC.PauseSpeedsForAllMonsters(true);
-            Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
-        }
-    }
-
     //randomly select an attack in their move list
     void SelectAttack()
     {
@@ -336,8 +337,8 @@ public class MonsterController : MonoBehaviour
             //will always target player unless a buff or heal
             target.Add(BC.player);
             HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling);
-            BC.AddTurnToQueue(turn);
-            //turnList.Add(turn);
+            //BC.AddTurnToQueue(turn);
+            actions.Add(turn);
             //Begin charging
             EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
             enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
@@ -392,14 +393,7 @@ public class MonsterController : MonoBehaviour
 
         if (chargeTimer >= durationInSeconds) //change back to BC.Threshold for testing
         {
-            //this will ensure it will not reset without trigger if it is not their turn
-            if (BC.turnList[0].owner == this.gameObject)
-            {
-                //Invoke("ExecuteTurn", 0.5f);
-                //ExecuteTurn();
-                BC.ExecuteTurnFor(this.gameObject); 
-                ResetAttack();
-            }
+            ExecuteTurn();
         }
         else
         {
@@ -408,25 +402,64 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    void ExecuteTurn()
+    public void RemoveActionAtIndex(int i)
+    {
+        actions.RemoveAt(i);
+    }
+
+
+
+    public void ExecuteTurn()
     {
         //if we have nothing left exit, otherwise continue combos etc
-        if (turnList[0] == null)
+        if (actions.Count == 0)
+        {
+            ResetAttack();
+            //BC.MonsterIsAnimating = false; //this is called at the animation IEnumarators instead at the last frame
+            DoneComboing = true;             //used to determine if we have completed all our actions
+            return;
+        }
+
+        //check if an animation is occuring if so then return
+        if (BC.MonsterIsAnimating)
         {
             return;
         }
 
-        turnReference = turnList[0];
-        targets = turnReference.targets;
+        previousAction = actions[0];
+        targets = previousAction.targets;
+        //this will pause time for us so other monsters dont increment
         BC.MonsterIsAnimating = true;
-        StartCoroutine(BC.BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f));
+        if(previousAction.targetArea == TargetArea.SINGLE)
+        {
+            StartCoroutine(BC.BeginAttack(previousAction.owner, previousAction.targets[0], 0.5f));
+        }
+        else
+        {
+            //AoE attacks wont animate in this case this is required
+            BC.MonsterIsAnimating = false;
+        }
+        
         foreach(GameObject target in targets)
         {
-            target.GetComponent<MonsterController>().Damage(turnReference.damage);
-            BC.SpawnBattleTextAbove(target);
+            //do cancel if needed
+            if (previousAction.isCanceling)
+            {
+                MonsterController targetsMonsterController = target.GetComponent<MonsterController>();
+                //we have to make sure the target has an action queued up otherwise just do damage as normal
+                if(targetsMonsterController.actions.Count >= 1)
+                {
+                    targetsMonsterController.RemoveActionAtIndex(0);
+                    BC.SpawnBattleTextAboveWithString(target, "Attack Canceled!");
+                }
+            }
+
+            target.GetComponent<MonsterController>().Damage(previousAction.damage);
+            BC.SpawnBattleTextAbove(target, previousAction.damage);
         }
 
-        ResetAttack();
+        actions.RemoveAt(0);
+        ExecuteTurn();
     }
 
     void OnMouseEnter()
@@ -448,7 +481,6 @@ public class MonsterController : MonoBehaviour
         else
         {
             IsTargeted(true);
-
             UpdateInfo();
         }
     }
@@ -530,7 +562,7 @@ public class MonsterController : MonoBehaviour
             spriteRenderer.color = new Color(1, 1, 1, f); 
             yield return null;
         }
-        //this.gameObject.SetActive(false);
+        //this.gameObject.SetActive(false); //do not set this to false, we may want to "Revive" in the future?
     }
 
     IEnumerator FlashInput()
