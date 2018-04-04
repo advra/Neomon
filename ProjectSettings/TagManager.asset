@@ -20,6 +20,9 @@ TagManager:
   - UIHeadReference
   - InfoPanel
   - PauseMenu
+  - Deck
+  - DeckContainer
+  - DeckWindow
   layers:
   - Default
   - TransparentFX

@@ -312,7 +312,7 @@ public class BattleController : MonoBehaviour {
         SpawnBattleTextAbove(targetedMonster);
     }
 
-    IEnumerator BeginAttack(GameObject attacker, GameObject defender, float duration)
+    public IEnumerator BeginAttack(GameObject attacker, GameObject defender, float duration)
     {
         float startTime;
         float totalDistance;
@@ -324,7 +324,7 @@ public class BattleController : MonoBehaviour {
         yield return SingleAttack(attacker, startPos, endPos, duration);
     }
 
-    IEnumerator SingleAttack(GameObject attacker, Vector3 a, Vector3 b, float time)
+    public IEnumerator SingleAttack(GameObject attacker, Vector3 a, Vector3 b, float time)
     {
         Vector3 initialPos = attacker.transform.position;
 
@@ -388,7 +388,7 @@ public class BattleController : MonoBehaviour {
         {
             //lerp monster from their position to their targets position
             MonsterIsAnimating = true;
-            StartCoroutine(BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f)) ;
+            StartCoroutine(BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f));
         }
 
         foreach (GameObject targetedMonster in targets)
@@ -449,7 +449,7 @@ public class BattleController : MonoBehaviour {
         }
     }
 
-    void SpawnBattleTextAbove(GameObject monster)
+    public void SpawnBattleTextAbove(GameObject monster)
     {
 
         GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);
@@ -466,7 +466,7 @@ public class BattleController : MonoBehaviour {
         textObj.GetComponent<RectTransform>().anchoredPosition = canvasPos;
     }
 
-    void SpawnBattleTextAboveWithString(GameObject monster, string s)
+    public void SpawnBattleTextAboveWithString(GameObject monster, string s)
     {
 
         GameObject textObj = Instantiate(BattleTextPrefab, canvasRect.transform);

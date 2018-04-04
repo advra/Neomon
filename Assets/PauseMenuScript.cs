@@ -26,6 +26,8 @@ public class PauseMenuScript : MonoBehaviour {
         {
             userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
         }
+
+        userController.SetPauseMenuVisible = false;
         userController.ContinueGame();
     }
 }

@@ -4,13 +4,22 @@ using UnityEngine;
 
 public class UserController : MonoBehaviour {
 
+    BattleController battleController;
+
     [SerializeField]
     private GameObject PauseMenu;
-    BattleController battleController;
+    [SerializeField]
+    private GameObject DeckWindow;
     [SerializeField]
     private bool menuActive;
     [SerializeField]
     private bool userturn;
+
+    public GameObject DeckWindowGameObject
+    {
+        get { return DeckWindow; }
+        set { DeckWindow = value; }
+    }
 
     public bool IsUsersTurn
     {
@@ -18,10 +27,27 @@ public class UserController : MonoBehaviour {
         set { userturn = value;  }
     }
 
+    public bool SetPauseMenuVisible
+    {
+        set { PauseMenu.SetActive(value); }
+    }
+
     public bool MenuIsActive
     {
         get { return menuActive; }
-        set { menuActive = value; }
+        set
+        {
+            menuActive = value;
+
+            if (MenuIsActive)
+            {
+                PauseGame();
+            }
+            else
+            {
+                ContinueGame();
+            }
+        }
     }
 
     public void Start()
@@ -44,11 +70,13 @@ public class UserController : MonoBehaviour {
             if (PauseMenu.activeInHierarchy)
             {
                 MenuIsActive = false;
+                PauseMenu.SetActive(false);
                 ContinueGame();
             }
             else
             {
                 MenuIsActive = true;
+                PauseMenu.SetActive(true);
                 PauseGame();
             }
         }
@@ -56,13 +84,20 @@ public class UserController : MonoBehaviour {
 
     public void ContinueGame()
     {
-        PauseMenu.SetActive(false);
         battleController.PauseGame = false;
     }
 
     public void PauseGame()
     {
-        PauseMenu.SetActive(true);
         battleController.PauseGame = true;
+    }
+
+    //used for things like a settings button
+    public void PauseToggle()
+    {
+        MenuIsActive = true;
+        PauseMenu.SetActive(true);
+        PauseGame();
+
     }
 }

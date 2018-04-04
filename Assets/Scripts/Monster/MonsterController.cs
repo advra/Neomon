@@ -17,7 +17,6 @@ public class MonsterController : MonoBehaviour
     public PlayerHandController playerHand;
 
     public Monster monster;
-
     public State monsterState;
     public GameObject trackingTickObject;
     public PlayerTickController playerTickController;
@@ -74,6 +73,11 @@ public class MonsterController : MonoBehaviour
     Vector2 canvasPos;
     Vector2 screenPointToTarget;
     Text[] panelInfoText;
+
+    //used for internal turns
+    public HandleTurn turnReference;
+    public List<HandleTurn> turnList = new List<HandleTurn>();
+    public List<GameObject> targets = new List<GameObject>();
 
     //at the end of every attack after executed (or canceled call this)
     public void ResetAttack()
@@ -240,58 +244,6 @@ public class MonsterController : MonoBehaviour
         
     }
 
-    void CheckAttack()
-    {
-        if (userController.IsUsersTurn)
-        {
-            return;
-        }
-
-        if (currentSpeed > BC.Threshold)
-        {
-            BC.PauseSpeedsForAllMonsters(true);
-            Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
-        }
-    }
-
-    //randomly select an attack in their move list
-    void SelectAttack()
-    {
-        if (userController.IsUsersTurn)
-        {
-            return;
-        }
-
-        BC.PauseSpeedsForAllMonsters(true);
-
-        //prevent enemies from continue attack until user does something on their turn
-
-        //randomly select attack from attack set for enemies
-        if (team == Team.ENEMY)
-        {
-            int random = Random.Range(0, moveSet.Count);
-            damage = moveSet[random].damage;
-            chargeDuration = moveSet[random].chargeTime;
-            bool isCanceling = moveSet[random].isCanceling;
-            List<GameObject> target = new List<GameObject>();
-            target.Add(BC.player);
-            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling);
-            BC.AddTurnToQueue(turn);
-            //Begin charging
-            EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
-            enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
-            monsterState = State.CHARGING;
-            BC.PauseSpeedsForAllMonsters(false);
-        }
-        //wait until card controller changes users state from here
-        if (team == Team.PLAYER)
-        {
-            userController.IsUsersTurn = true;
-            //BC.PauseSpeedsForAllMonsters(false); is set in card controller
-        }
-    }
-
-
     void SpawnEnemy()
     {
         //will replace this with scriptable objects?
@@ -329,7 +281,7 @@ public class MonsterController : MonoBehaviour
             spriteFile = monster.MonsterBase.spriteFile + "_b";
         }
         spriteRenderer.sprite = Resources.Load<Sprite>("Sprites/mon/mon_" + spriteFile);
-        
+
         //We add box collider later because it inherits the sprites dimensions otherwise 
         //the box collider would not generate the appropriate size for the monster
         gameObject.AddComponent<BoxCollider2D>();
@@ -341,10 +293,63 @@ public class MonsterController : MonoBehaviour
         currentHealth = monster.Health;
         maxHealth = monster.MaxHealth;
         //add slight variance so icons are not the same
-        float variance = Random.Range(-.5f,.5f);
+        float variance = Random.Range(-.5f, .5f);
         baseSpeed = monster.Speed + variance;
         BC.ThresholdUpdate(baseSpeed);
         //Debug.Log(monster.Print);
+    }
+
+    void CheckAttack()
+    {
+        if (userController.IsUsersTurn)
+        {
+            return;
+        }
+
+        if (currentSpeed > BC.Threshold)
+        {
+            BC.PauseSpeedsForAllMonsters(true);
+            Debug.Log(this.gameObject + " Speed at:" + currentSpeed);
+        }
+    }
+
+    //randomly select an attack in their move list
+    void SelectAttack()
+    {
+        if (userController.IsUsersTurn)
+        {
+            return;
+        }
+
+        BC.PauseSpeedsForAllMonsters(true);
+
+        //prevent enemies from continue attack until user does something on their turn
+
+        //randomly select attack from attack set for enemies
+        if (team == Team.ENEMY)
+        {
+            int random = Random.Range(0, moveSet.Count);
+            damage = moveSet[random].damage;
+            chargeDuration = moveSet[random].chargeTime;
+            bool isCanceling = moveSet[random].isCanceling;
+            List<GameObject> target = new List<GameObject>();
+            //will always target player unless a buff or heal
+            target.Add(BC.player);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling);
+            BC.AddTurnToQueue(turn);
+            //turnList.Add(turn);
+            //Begin charging
+            EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
+            enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
+            monsterState = State.CHARGING;
+            BC.PauseSpeedsForAllMonsters(false);
+        }
+        //wait until card controller changes users state from here
+        if (team == Team.PLAYER)
+        {
+            userController.IsUsersTurn = true;
+            //BC.PauseSpeedsForAllMonsters(false); is set in card controller
+        }
     }
 
     void IncreaseSpeed()
@@ -388,11 +393,13 @@ public class MonsterController : MonoBehaviour
         if (chargeTimer >= durationInSeconds) //change back to BC.Threshold for testing
         {
             //this will ensure it will not reset without trigger if it is not their turn
-            //if (BC.turnList[0].owner == this.gameObject)
-            //{
+            if (BC.turnList[0].owner == this.gameObject)
+            {
+                //Invoke("ExecuteTurn", 0.5f);
+                //ExecuteTurn();
                 BC.ExecuteTurnFor(this.gameObject); 
                 ResetAttack();
-            //}
+            }
         }
         else
         {
@@ -401,8 +408,30 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    void ExecuteTurn()
+    {
+        //if we have nothing left exit, otherwise continue combos etc
+        if (turnList[0] == null)
+        {
+            return;
+        }
+
+        turnReference = turnList[0];
+        targets = turnReference.targets;
+        BC.MonsterIsAnimating = true;
+        StartCoroutine(BC.BeginAttack(turnReference.owner, turnReference.targets[0], 0.5f));
+        foreach(GameObject target in targets)
+        {
+            target.GetComponent<MonsterController>().Damage(turnReference.damage);
+            BC.SpawnBattleTextAbove(target);
+        }
+
+        ResetAttack();
+    }
+
     void OnMouseEnter()
     {
+
         if (userController.MenuIsActive || (BC.BattleState == BattleController.State.ENDCONDITION) || (BC.BattleState == BattleController.State.BEGIN))
         {
             return;

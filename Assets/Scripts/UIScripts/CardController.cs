@@ -53,6 +53,14 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public GameObject selectedTarget;
     [SerializeField]
     bool resetDisplay;
+    [SerializeField]
+    bool displayElement;
+
+    //used if we use this gameobject as a visiual menu display we do not want to have it interact any battle sequence, only display its data
+    public bool SetAsDisplayElement
+    {
+        set { displayElement = value; }
+    }
 
     public Vector3 OriginalPosition{
         get{return originalPosition;}
@@ -128,6 +136,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (displayElement)
+        {
+            return;
+        }
+
         state = State.DRAG;
         canvas.overrideSorting = true;
         //cardImage.material = Resources.Load<Material>("OutlinedDiffuse");
@@ -148,6 +161,11 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        if (displayElement)
+        {
+            return;
+        }
+
         //reset colors
         foreach (GameObject monster in battleController.EnemiesInBattle)
         {
