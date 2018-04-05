@@ -35,7 +35,8 @@ public class MonsterController : MonoBehaviour
         CHARGING,   //wait time delay needed to perform action
         PERFORMING,
         DEAD,
-        PAUSED
+        PAUSED,
+        STUNNED
     }
 
     //used to quickly identify in the queuer the type of monster 
@@ -80,6 +81,8 @@ public class MonsterController : MonoBehaviour
     public List<GameObject> targets = new List<GameObject>();
     private bool comboFinish;
     public bool combosQueued;
+    public int stunNumberOfTurns;
+    public bool stunCheckFinish;
 
     public float AddDuration
     {
@@ -116,6 +119,8 @@ public class MonsterController : MonoBehaviour
         isChargingToAttack = false;
         monsterState = State.WAITING;
         done = false;
+
+        stunCheckFinish = false;
     }
 
     public GameObject SetHealthTextObject
@@ -314,17 +319,39 @@ public class MonsterController : MonoBehaviour
         //Debug.Log(monster.Print);
     }
 
+    void ForceCheckOwnerOfStuns()
+    {
+        //check if this stunned monster is owner of Stunned component in other monsters and do a force check
+        foreach (GameObject enemy in BC.EnemiesInBattle)
+        {
+            Stun enemyStunComponent = enemy.GetComponent<Stun>();
+            if (enemyStunComponent != null)
+            {
+                if (enemyStunComponent.Owner == this.gameObject)
+                {
+                    enemyStunComponent.Check();
+                }
+            }
+        }
+
+        stunCheckFinish = true;
+    }
+
     //randomly select an attack in their move list
     void SelectAttack()
     {
+        if (!stunCheckFinish)
+        {
+            ForceCheckOwnerOfStuns();
+        }
+
+        //prevent enemies from continue attack until user does something on their turn
         if (userController.IsUsersTurn)
         {
             return;
         }
 
-        BC.PauseSpeedsForAllMonsters(true);
-
-        //prevent enemies from continue attack until user does something on their turn
+        BC.PauseSpeedsForAllMonsters(true); 
 
         //randomly select attack from attack set for enemies
         if (team == Team.ENEMY)
@@ -336,7 +363,7 @@ public class MonsterController : MonoBehaviour
             List<GameObject> target = new List<GameObject>();
             //will always target player unless a buff or heal
             target.Add(BC.player);
-            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling, stunNumberOfTurns);
             //BC.AddTurnToQueue(turn);
             actions.Add(turn);
             //Begin charging
@@ -411,6 +438,14 @@ public class MonsterController : MonoBehaviour
 
     public void ExecuteTurn()
     {
+        //check if this monster is stunned
+        //Stun checkStun = GetComponent<Stun>();
+        //if (checkStun != null)
+        //{
+        //    checkStun.Check();
+        //    return;
+        //}
+
         //if we have nothing left exit, otherwise continue combos etc
         if (actions.Count == 0)
         {
@@ -452,6 +487,24 @@ public class MonsterController : MonoBehaviour
                     targetsMonsterController.RemoveActionAtIndex(0);
                     BC.SpawnBattleTextAboveWithString(target, "Attack Canceled!");
                 }
+            }
+
+            //if we stun enemy add us as the owner otherwise increase the number
+            if(previousAction.stunNumberOfTurns > 0)
+            {
+                Stun stun = target.GetComponent<Stun>();
+
+                if(stun == null)
+                {
+                    target.AddComponent<Stun>();
+                    stun = target.GetComponent<Stun>();
+                    stun.Owner = this.gameObject;
+                }
+                else
+                {
+                    stun.AddTurns(stunNumberOfTurns);
+                } 
+                
             }
 
             target.GetComponent<MonsterController>().Damage(previousAction.damage);
@@ -637,6 +690,8 @@ public class MonsterController : MonoBehaviour
                 DoDeath();
                 break;
             case (State.PAUSED):
+                break;
+            case (State.STUNNED):
                 break;
             default:
                 break;

@@ -15,6 +15,8 @@ public class HandleTurn {
     public int damage;
     public float chargeTime;
     public bool isCanceling;
+    public bool stun;
+    public int stunNumberOfTurns;
 
     //player event constructor
     //constructor if not specific single attacker
@@ -27,7 +29,7 @@ public class HandleTurn {
     //    this.chargeTime = chargeTime;
     //}
     //for canceling cards and others of special type
-    public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, float chargeTime, bool isCanceling)
+    public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, float chargeTime, bool isCanceling, int stunNumberOfTurns)
     {
         this.owner = owner;
         this.targets = target;
@@ -35,17 +37,11 @@ public class HandleTurn {
         this.damage = damage;
         this.chargeTime = chargeTime;
         this.isCanceling = isCanceling;
+        this.stunNumberOfTurns = stunNumberOfTurns;
+        if(stunNumberOfTurns <= 0)
+        {
+            stun = false;
+        }
     }
-
-    //constructor for enemy
-    //public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, float chargeTime, bool isCanceling)
-    //{
-    //    this.owner = owner;
-    //    this.targets = target;
-    //    this.targetArea = targetArea;
-    //    this.damage = damage;
-    //    this.chargeTime = chargeTime;
-    //    this.isCanceling = isCanceling;
-    //}
 
 }

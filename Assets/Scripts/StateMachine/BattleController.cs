@@ -30,7 +30,7 @@ public class BattleController : MonoBehaviour {
     //used for monster queueing
     public List<GameObject> EnemiesInBattle = new List<GameObject>();
     public List<GameObject> FriendliesInBattle = new List<GameObject>();
-
+    public List<GameObject> AllInBattle = new List<GameObject>();
     //current turn data
 
     [SerializeField]

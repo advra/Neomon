@@ -160,6 +160,7 @@ public class PlayerHandController : MonoBehaviour {
                     cardController.chargeTime = deck[0].charge;
                     cardController.isCanceling = deck[0].isCanceling;
                     cardController.isChainCombo = deck[0].chainCombo;
+                    cardController.stunNumberOfTurns = deck[0].stunNumberOfTurns;
                     cardController.PlayerHand = this.gameObject;
                     Image cardImage = cardObj.GetComponent<Image>();
                     //visually format image
@@ -326,13 +327,15 @@ public class PlayerHandController : MonoBehaviour {
         Card thrustCard = cardDatabase.cards[1];
         Card entangleCard = cardDatabase.cards[2];
         Card firstStrike = cardDatabase.cards[3];
+        Card shortCircuit = cardDatabase.cards[4];
 
         //add cards
         for (int i = 0; i < 5; i++)
         {
-            deck.Add(sliceCard);
-            deck.Add(thrustCard);
-            deck.Add(firstStrike);
+            //deck.Add(sliceCard);
+            //deck.Add(thrustCard);
+            //deck.Add(firstStrike);
+            deck.Add(shortCircuit);
         }
         deck.Add(entangleCard);
 

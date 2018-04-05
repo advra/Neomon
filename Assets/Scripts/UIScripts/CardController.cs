@@ -25,6 +25,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     //not to be confused with the Hand Canvas
     Canvas canvas;
     Image cardImage;
+    [SerializeField]
     Card card;
     Text[] texts;
     Image[] images;
@@ -40,6 +41,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public float chargeTime;
     public bool isCanceling;
     public bool isChainCombo;
+    public int stunNumberOfTurns;
 
     public State state; 
     [SerializeField]
@@ -230,8 +232,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 DetermineTargets();
             }
 
+
             //Check if we skip the below or continue to chain
             CheckComboChaining();
+            
 
         }
         //if mouse not hovering above a monster check for battlefield
@@ -456,7 +460,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         GameObject targetedMonster = ValidTargetDraggedOn();
         List<GameObject> targets = new List<GameObject>();
         targets.Add(targetedMonster);
-        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling);
+        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling, stunNumberOfTurns);
         //battleController.AddTurnToQueue(turn);
         playerController.actions.Add(turn);
     }
@@ -471,7 +475,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             //setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
-            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime, isCanceling);
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime, isCanceling, stunNumberOfTurns);
             //battleController.AddTurnToQueue(turn);
             playerController.actions.Add(turn);
         }
@@ -516,8 +520,6 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
         }
-
-
     }
 
 }

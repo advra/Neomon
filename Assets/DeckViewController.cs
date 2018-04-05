@@ -209,7 +209,7 @@ public class DeckViewController : MonoBehaviour {
                 //every row increase the size of our element contain otherwise scroll wouldnt work properly
                 Debug.Log(i);
                 Vector2 currentSize = elementContainerRectTransform.sizeDelta;
-                elementContainerRectTransform.sizeDelta = new Vector2(currentSize.x, currentSize.y + 220.00f);
+                elementContainerRectTransform.sizeDelta = new Vector2(currentSize.x, currentSize.y + 222.0f); //220
 
                 //once done changing the size set the scrollbar to top
                 //scrollbar.value = 1.0f;
@@ -222,7 +222,7 @@ public class DeckViewController : MonoBehaviour {
             //required for scroll rect
             emptyObject.AddComponent<LayoutElement>();
             //need to remove event listeners otherwise our "Click to scroll" wont work and user is forced with scroll wheel only
-            Destroy(emptyObject.GetComponent<GraphicRaycaster>());
+            Destroy(emptyObject.GetComponentInChildren<GraphicRaycaster>());
             //emptyObject.transform.localScale *= 0.5f;
             //add to element so when we close this window it will remove the objects until next time (for refreshing.. will check for drawing or changes in deck rather than destroying)
             elements.Add(emptyObject);
