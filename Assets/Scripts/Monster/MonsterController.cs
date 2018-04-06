@@ -26,6 +26,8 @@ public class MonsterController : MonoBehaviour
 
     [SerializeField]
     private GameObject healthTextGameObject;
+    [SerializeField]
+    private GameObject blockTextGameObject;
 
     public enum State
     {
@@ -63,6 +65,7 @@ public class MonsterController : MonoBehaviour
     public float currentSpeed, baseSpeed;
     public float chargeTimer, chargeDuration;
     public int damage;
+    public int block;
     private RuntimeAnimatorController animator;
     private SpriteRenderer spriteRenderer;
     private BoxCollider2D boxCollider2D;
@@ -83,6 +86,7 @@ public class MonsterController : MonoBehaviour
     public bool combosQueued;
     public int stunNumberOfTurns;
     public bool stunCheckFinish;
+    public float stunCounter;
 
     public float AddDuration
     {
@@ -128,6 +132,11 @@ public class MonsterController : MonoBehaviour
         set { healthTextGameObject = value;  }
     }
 
+    public GameObject SetBlockUIText
+    {
+        set { blockTextGameObject = value; }
+    }
+
     public float CurrentSpeed
     {
         get { return currentSpeed; }
@@ -145,6 +154,27 @@ public class MonsterController : MonoBehaviour
         StartCoroutine(FlashInput());
     }
 
+    public void ResetTargetedToClear()
+    {
+        if (tickCanvas == null)
+        {
+            tickCanvas = trackingTickObject.GetComponent<Canvas>();
+        }
+
+        if (monsterMat == null)
+        {
+            monsterMat = GetComponent<Renderer>().material;
+        }
+
+        monsterMat.color = Color.white;
+
+        tickImages = trackingTickObject.GetComponentsInChildren<Image>();
+        tickImages[0].color = Color.white;
+        tickImages[1].color = Color.white;
+
+        tickCanvas.overrideSorting = false;
+    }
+
     public void IsTargeted(bool b)
     {
         if (tickCanvas == null)
@@ -152,9 +182,13 @@ public class MonsterController : MonoBehaviour
             tickCanvas = trackingTickObject.GetComponent<Canvas>();
         }
 
-        if (b)
+        if(monsterMat == null)
         {
             monsterMat = GetComponent<Renderer>().material;
+        }
+
+        if (b)
+        {
             monsterMat.color = new Color(1, 0.5f, 0.5f, 1);
 
             tickImages = trackingTickObject.GetComponentsInChildren<Image>();
@@ -165,8 +199,7 @@ public class MonsterController : MonoBehaviour
         }
         else
         {
-            Material mat = GetComponent<Renderer>().material;
-            mat.color = Color.white;
+            monsterMat.color = Color.white;
 
             tickImages = trackingTickObject.GetComponentsInChildren<Image>();
             tickImages[0].color = Color.white;
@@ -184,10 +217,15 @@ public class MonsterController : MonoBehaviour
             tickCanvas = trackingTickObject.GetComponent<Canvas>();
         }
 
+        if (monsterMat == null)
+        {
+            monsterMat = GetComponent<Renderer>().material;
+        }
+
+
         if (b)
         {
-            Material mat = GetComponent<Renderer>().material;
-            mat.color = new Color(0.5f, 1, 0.5f, 1);            //light green
+            monsterMat.color = new Color(0.5f, 1, 0.5f, 1);            //light green
 
             tickImages = trackingTickObject.GetComponentsInChildren<Image>();
             tickImages[0].color = Color.green;
@@ -197,8 +235,7 @@ public class MonsterController : MonoBehaviour
         }
         else
         {
-            Material mat = GetComponent<Renderer>().material;
-            mat.color = Color.white;
+            monsterMat.color = Color.white;
 
             tickImages = trackingTickObject.GetComponentsInChildren<Image>();
             tickImages[0].color = Color.white;
@@ -209,9 +246,31 @@ public class MonsterController : MonoBehaviour
 
     }
 
+    int CheckBlockFor(int damage)
+    {
+        int newBlock = block - damage;
+        //if we block all or some damage
+        if (newBlock >= 0)
+        {
+            BC.SpawnBattleTextAboveWithString(this.gameObject, "Blocked");
+            block = newBlock;
+            return 0;
+        }
+        else
+        //no more block remaining then do damage
+        {
+            BC.SpawnBattleTextAbove(this.gameObject, damage);
+            block = 0;
+            return Mathf.Abs(newBlock);
+        }
+        
+    }
+
     public void Damage(int amount)
     {
-        this.currentHealth -= amount;
+        //this.currentHealth -= amount;
+        this.currentHealth -= CheckBlockFor(amount);
+
         //Play damage sprite here
         if (this.currentHealth <= 0)
         {
@@ -319,31 +378,13 @@ public class MonsterController : MonoBehaviour
         //Debug.Log(monster.Print);
     }
 
-    void ForceCheckOwnerOfStuns()
-    {
-        //check if this stunned monster is owner of Stunned component in other monsters and do a force check
-        foreach (GameObject enemy in BC.EnemiesInBattle)
-        {
-            Stun enemyStunComponent = enemy.GetComponent<Stun>();
-            if (enemyStunComponent != null)
-            {
-                if (enemyStunComponent.Owner == this.gameObject)
-                {
-                    enemyStunComponent.Check();
-                }
-            }
-        }
-
-        stunCheckFinish = true;
-    }
-
     //randomly select an attack in their move list
     void SelectAttack()
     {
-        if (!stunCheckFinish)
-        {
-            ForceCheckOwnerOfStuns();
-        }
+        //if (!stunCheckFinish)
+        //{
+        //    ForceCheckOwnerOfStuns();
+        //}
 
         //prevent enemies from continue attack until user does something on their turn
         if (userController.IsUsersTurn)
@@ -363,9 +404,13 @@ public class MonsterController : MonoBehaviour
             List<GameObject> target = new List<GameObject>();
             //will always target player unless a buff or heal
             target.Add(BC.player);
-            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, chargeDuration, isCanceling, stunNumberOfTurns);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, moveSet[random].block, chargeDuration, isCanceling, stunNumberOfTurns);
             //BC.AddTurnToQueue(turn);
             actions.Add(turn);
+
+            //reset the current speed for measuring stuns
+            currentSpeed = 0;
+
             //Begin charging
             EnemyTickController enemyTickController = trackingTickObject.GetComponent<EnemyTickController>();
             enemyTickController.ChangeState(EnemyTickController.GaugeState.CHARGING);
@@ -438,13 +483,6 @@ public class MonsterController : MonoBehaviour
 
     public void ExecuteTurn()
     {
-        //check if this monster is stunned
-        //Stun checkStun = GetComponent<Stun>();
-        //if (checkStun != null)
-        //{
-        //    checkStun.Check();
-        //    return;
-        //}
 
         //if we have nothing left exit, otherwise continue combos etc
         if (actions.Count == 0)
@@ -475,9 +513,10 @@ public class MonsterController : MonoBehaviour
             BC.MonsterIsAnimating = false;
         }
         
+        //Apply effect to targets
         foreach(GameObject target in targets)
         {
-            //do cancel if needed
+            // Attack Canceling?
             if (previousAction.isCanceling)
             {
                 MonsterController targetsMonsterController = target.GetComponent<MonsterController>();
@@ -489,7 +528,8 @@ public class MonsterController : MonoBehaviour
                 }
             }
 
-            //if we stun enemy add us as the owner otherwise increase the number
+            // Stunning?
+            // if we stun enemy add us as the owner otherwise increase the number
             if(previousAction.stunNumberOfTurns > 0)
             {
                 Stun stun = target.GetComponent<Stun>();
@@ -502,17 +542,35 @@ public class MonsterController : MonoBehaviour
                 }
                 else
                 {
-                    stun.AddTurns(stunNumberOfTurns);
+                    Debug.Log("Stuns found adding " + previousAction.stunNumberOfTurns);
+                    stun.AddTurns(previousAction.stunNumberOfTurns);
                 } 
                 
             }
 
-            target.GetComponent<MonsterController>().Damage(previousAction.damage);
-            BC.SpawnBattleTextAbove(target, previousAction.damage);
+            if(previousAction.block > 0)
+            {
+                ApplyBlock();
+            }
+
+            //Display only if damage was > 0
+            if(previousAction.damage != 0)
+            {
+                target.GetComponent<MonsterController>().Damage(previousAction.damage);
+                // moved text generation to Damage to control what is outputted
+                //BC.SpawnBattleTextAbove(target, previousAction.damage);
+            }
+
         }
 
         actions.RemoveAt(0);
         ExecuteTurn();
+    }
+
+    void ApplyBlock()
+    {
+        this.block += previousAction.block;
+        BC.SpawnBattleTextAboveWithString(this.gameObject, "Gained " + previousAction.block + " Block");
     }
 
     void OnMouseEnter()
@@ -639,6 +697,40 @@ public class MonsterController : MonoBehaviour
         yield return new WaitForSeconds(1f);
     }
 
+    void IncreaseStun()
+    {
+        if (BC.MonsterIsAnimating)
+        {
+            return;
+        }
+
+        //this will prevent speed increasing when pause menu is open, end of game, or user's turn
+        if (BC.PauseGame || userController.IsUsersTurn || (BC.BattleState == BattleController.State.ENDCONDITION) || (BC.BattleState == BattleController.State.BEGIN))
+        {
+            return;
+        }
+
+        if (stunCounter >= BC.Threshold)
+        {
+            //remove stun component
+            Stun stunComponent = GetComponent<Stun>();
+            if (stunComponent != null)
+            {
+                stunComponent.Check();
+                //reset speed and continue this process until the stun component changes this monsters status back to its originalState
+                stunCounter = 0;
+            }
+            else
+            {
+                Debug.Log("IncreaseStun() was likely triggered but no stun component found for " + this.gameObject);
+            }
+        }
+        else
+        {
+            stunCounter += baseSpeed * Time.deltaTime;
+        }
+    }
+
     void Awake()
     {
         if (BC == null)
@@ -692,6 +784,7 @@ public class MonsterController : MonoBehaviour
             case (State.PAUSED):
                 break;
             case (State.STUNNED):
+                IncreaseStun();
                 break;
             default:
                 break;

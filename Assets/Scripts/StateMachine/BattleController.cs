@@ -210,7 +210,7 @@ public class BattleController : MonoBehaviour {
         playerController = player.GetComponent<MonsterController>();
         playerController.team = MonsterController.Team.PLAYER;
         FriendliesInBattle.Add(player);
-
+        AllInBattle.Add(player);
 
         //Now setup enemy components and determine number of enemies
         numberOfEnemies = Random.Range(0, 3);
@@ -223,6 +223,7 @@ public class BattleController : MonoBehaviour {
             monsterControllerB = enemyB.GetComponent<MonsterController>();
             monsterControllerB.team = MonsterController.Team.ENEMY;
             EnemiesInBattle.Add(enemyB);
+            AllInBattle.Add(enemyB);
         }
         else if(numberOfEnemies == 2)
         {
@@ -235,6 +236,8 @@ public class BattleController : MonoBehaviour {
             monsterControllerC.team = MonsterController.Team.ENEMY;
             EnemiesInBattle.Add(enemyB);
             EnemiesInBattle.Add(enemyC);
+            AllInBattle.Add(enemyB);
+            AllInBattle.Add(enemyC);
         }
         else
         {
@@ -250,6 +253,9 @@ public class BattleController : MonoBehaviour {
             EnemiesInBattle.Add(enemyA);
             EnemiesInBattle.Add(enemyB);
             EnemiesInBattle.Add(enemyC);
+            AllInBattle.Add(enemyA);
+            AllInBattle.Add(enemyB);
+            AllInBattle.Add(enemyC);
         }
 
         if(monsterControllerA || monsterControllerB || monsterControllerC == null)
@@ -371,6 +377,7 @@ public class BattleController : MonoBehaviour {
         isBattling = false;
         GameObject gameResultText = Instantiate(Resources.Load<GameObject>("Menu/BattleResultTextPrefab"), canvasRect.transform);
         gameResultText.GetComponent<BattleResultText>().SetText("Victory!", "All enemies defeated", "Continue");
+        GameObject.FindGameObjectWithTag("InfoPanel").GetComponent<InfoPanelController>().ResetPosition();
     }
 
     public void PlayerLose()
@@ -379,6 +386,7 @@ public class BattleController : MonoBehaviour {
         isBattling = false;
         GameObject gameResultText = Instantiate(Resources.Load<GameObject>("Menu/BattleResultTextPrefab"), canvasRect.transform);
         gameResultText.GetComponent<BattleResultText>().SetText("Defeat!", "Heroes are destined to die...", "Retry");
+        GameObject.FindGameObjectWithTag("InfoPanel").GetComponent<InfoPanelController>().ResetPosition();
     }
 }
 

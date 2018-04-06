@@ -9,16 +9,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d9bb13bbabd2b1b49b2f29022dd61866, type: 3}
-  m_Name: Thrust
+  m_Name: Armor Up
   m_EditorClassIdentifier: 
-  name: Thrust
-  description: Cancel an Enemy Attack while dealing 6 DMG.
-  artwork: {fileID: 21300000, guid: 415bc2d23b0724645bc4522d395b9402, type: 3}
-  damage: 6
-  block: 0
+  name: Armor Up
+  description: Gain 1 Armor
+  artwork: {fileID: 0}
+  damage: 0
+  block: 5
   cost: 1
   charge: 0.5
-  targetArea: 0
-  isCanceling: 1
+  targetArea: 4
+  isCanceling: 0
   chainCombo: 0
   stunNumberOfTurns: 0

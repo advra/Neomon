@@ -11,14 +11,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9bb13bbabd2b1b49b2f29022dd61866, type: 3}
   m_Name: Short Circuit
   m_EditorClassIdentifier: 
-  name: 
-  description: 
+  name: Short Circuit
+  description: Deal 3 DMG and Stun an enemy 1 turn
   artwork: {fileID: 0}
-  damage: 0
-  cost: 0
-  charge: 0
+  damage: 3
+  block: 0
+  cost: 1
+  charge: 1
   targetArea: 0
   isCanceling: 0
   chainCombo: 0
-  stun: 0
-  stunNumberOfTurns: 0
+  stunNumberOfTurns: 1

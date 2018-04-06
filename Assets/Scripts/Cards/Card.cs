@@ -22,8 +22,10 @@ public class Card : ScriptableObject {
     public string description;
     //the card sprite but will be replaced to single artwork only
     public Sprite artwork;
-    //the amount that affects the HP
+    // the amount that affects the HP
     public int damage;
+    // amount that blocks damage
+    public int block;
     //how much enery it cost to use this attack
     public int cost;
     //the amount of time in secs to charge to perform this attack

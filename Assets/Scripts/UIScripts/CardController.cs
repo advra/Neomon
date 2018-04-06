@@ -37,6 +37,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public Sprite sprite;
     public TargetArea targetArea;
     public int damageAmount;
+    public int block;
     public int cost;
     public float chargeTime;
     public bool isCanceling;
@@ -128,8 +129,16 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
         if (description.Length > 30)
         {
+            texts[3].fontSize = 16;
+        }
+
+        if (description.Length > 20)
+        {
             texts[3].fontSize = 20;
         }
+
+
+
         texts[3].text = description;
         //texts[3].text = description;
         if(targetArea == TargetArea.SINGLE)
@@ -145,6 +154,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     public void OnDrag(PointerEventData eventData)
     {
+        // is a menu window is open do nothing
         if (displayElement)
         {
             return;
@@ -159,26 +169,49 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         RescaleCard(distanceFactor);
         VaryTranspaency(distanceFactor);
 
-        if(targetArea == TargetArea.ALL)
+        //do target highlights if above screen threshold otherwise clear
+        if ((Input.mousePosition.y > Screen.height * 0.45f))
         {
-            foreach(GameObject monster in battleController.EnemiesInBattle)
+            //display as targeted for each type
+            if (targetArea == TargetArea.ALL)
             {
-                monster.GetComponent<MonsterController>().IsTargeted(true);
+                foreach (GameObject monster in battleController.EnemiesInBattle)
+                {
+                    monster.GetComponent<MonsterController>().IsTargeted(true);
+                }
+            }
+            else if (targetArea == TargetArea.SELF)
+            {
+                battleController.FriendliesInBattle[0].GetComponent<MonsterController>().IsPlayerTargeted(true);
+            }
+            else
+            {
+                // other attack types not listed
             }
         }
+        else
+        {
+            // reset colors
+            foreach (GameObject monster in battleController.AllInBattle)
+            {
+                monster.GetComponent<MonsterController>().ResetTargetedToClear();
+            }
+        }
+
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        // is a menu window is open do nothing
         if (displayElement)
         {
             return;
         }
 
-        //reset colors
-        foreach (GameObject monster in battleController.EnemiesInBattle)
+        // reset colors
+        foreach (GameObject monster in battleController.AllInBattle)
         {
-            monster.GetComponent<MonsterController>().IsTargeted(false);
+            monster.GetComponent<MonsterController>().ResetTargetedToClear();
         }
 
         if(!(battleController.player.GetComponent<MonsterController>().monsterState == MonsterController.State.SELECTING))
@@ -189,11 +222,6 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             return;
         }
 
-        //if (!playerHandController.isPlayerTurn)
-        //{
-
-        //}
-
         if (!playerHandController.PlayerHasEnoughCharges(cost))
         {
             state = State.RESET;
@@ -201,58 +229,63 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
 
 
-        //prevent player from attacking himself unless it is a "self or heal card"
+        // prevent player from attacking himself unless it is a "self or heal card"
         if(targetArea == TargetArea.SINGLE)
         {
-            if (IsPlayerValidTarget() == battleController.player)
+            if (ValidGameObjectTarget() == battleController.player)
             {
                 state = State.RESET;
                 return;
             }
         }
 
-        //If Card dropped over 1 monster
-        //Careful: Special case where user cursor drags and drops a card above a monster
+        // If Card dropped over 1 monster
+        // Careful: Special case where user cursor drags and drops a card above a monster
         if (IsValidTarget())
         {
+            selectedTarget = ValidGameObjectTarget();
             playerHandController.AdjustCost(cost);
-            //hide transparency of the card while we determine the attack
+            // hide transparency of the card while we determine the attack
             HideCard();
-            //Note: this will destroy the card within this method
+            // Note: this will destroy the card within this method
             playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
 
-            //if a single target card then apply to one monster
+            // if a single target card then apply to one monster
             if (targetArea == TargetArea.SINGLE)
             {
                 SingleTargetAttack();
             }
-            //Otherwise determine which target the card applies to
+            // Otherwise determine which target the card applies to
             else
             {
                 DetermineTargets();
             }
 
 
-            //Check if we skip the below or continue to chain
+            // Check if we skip the below or continue to chain
             CheckComboChaining();
             
 
         }
-        //if mouse not hovering above a monster check for battlefield
-        //Check and apply any AoE cards if user drags and drops a card in the battlefield 
+        // if mouse not hovering above a monster check for battlefield
+        // Check and apply any AoE cards if user drags and drops a card in the battlefield 
         else if (targetArea != TargetArea.SINGLE)
         {
             if ((Input.mousePosition.y > Screen.height * 0.45f) )
             {
-                //Debug.Log("Played above the hand");
-                //Applies card effects within battlefield bounds
-                //This does not handle single target cards, check above if statements
+                // Debug.Log("Played above the hand");
+                // Applies card effects within battlefield bounds
+                // This does not handle single target cards, check above if statements
                 playerHandController.AdjustCost(cost);
                 HideCard();
-                //Note: this will destroy the card within this method
+                // Note: this will destroy the card within this method
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
-                DetermineTargets();                 //determine the targets to add to our monsters action queue
-                CheckComboChaining();               //check if we finish chaining cards or continue waiting
+
+                // determine the targets to add to our monsters action queue
+                DetermineTargets();                 
+
+                // check if we finish chaining cards or continue waiting
+                CheckComboChaining();               
             }
             else
             {
@@ -285,7 +318,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     void FixedUpdate()
     {
-        //Some weird bug when dragging and droping really quickly occurs
+        // Some weird bug when dragging and droping really quickly occurs
         switch (state)
         {
             case State.NORMAL:
@@ -311,10 +344,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     void ResetCardDisplay()
     {
-        //reset card properties back to hand
+        // reset card properties back to hand
         canvas.overrideSorting = false;
-        //removed because we use lerp instead
-        //transform.localPosition = originalPosition;
+        // removed because we use lerp instead
+        // transform.localPosition = originalPosition;
         transform.localScale = new Vector3(1, 1, 1);
         ResetTransparency();
     }
@@ -366,7 +399,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         cardImage.color = new Color (1,1,1,1);
     }
 
-    //This class returns if we hit a monster
+    // This class returns if we hit a monster
     public GameObject ValidTargetDraggedOn(){
         hitInfo = new RaycastHit();
         screenRay = Camera.main.ScreenPointToRay(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0.0f));
@@ -380,7 +413,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
     }
 
-    //checks if hits a monster
+    // checks if hits a monster
     public bool IsValidTarget()
     {
         hitInfo = new RaycastHit();
@@ -397,8 +430,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
     }
 
-    //checks if hits player
-    public GameObject IsPlayerValidTarget()
+    // checks if hits player
+    public GameObject ValidGameObjectTarget()
     {
         hitInfo = new RaycastHit();
         screenRay = Camera.main.ScreenPointToRay(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0.0f));
@@ -450,46 +483,49 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         string s = damageAmount.ToString();
         textObj.GetComponent<Text>().text = s;
     }
-
-    //Called when a card is dragged on top of an enemy
+    // Called when a card is dragged on top of an enemy
     public void SingleTargetAttack()
     {
-        //ensure this card is removed
+        // ensure this card is removed
         state = State.DESTROY;
-        //setup and store the event data
+        // setup and store the event data
         GameObject targetedMonster = ValidTargetDraggedOn();
         List<GameObject> targets = new List<GameObject>();
         targets.Add(targetedMonster);
-        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, chargeTime, isCanceling, stunNumberOfTurns);
+        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
         //battleController.AddTurnToQueue(turn);
         playerController.actions.Add(turn);
     }
 
-    //Called when a card is dropped on the battlefield
-    //Works for all except for single target cards. Call SingleTargetAttack() instead
+    // Called when a card is dropped on the battlefield
+    // Works for all except for single target cards. Call SingleTargetAttack() instead
     public void DetermineTargets()
     {
-        //ensure this card is removed
+        // ensure this card is removed
         state = State.DESTROY;
         if (targetArea == TargetArea.ALL)
         {
-            //setup and store the event data
+            // setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
-            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, chargeTime, isCanceling, stunNumberOfTurns);
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
             //battleController.AddTurnToQueue(turn);
             playerController.actions.Add(turn);
         }
-        else if (targetArea == TargetArea.LINE)
+        else if (targetArea == TargetArea.SELF)
         {
-            //logic needed in the future
+            var targets = new List<GameObject>();
+            // setup and store the event data
+            // assuming we block on only one target 
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.FriendliesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
+            playerController.actions.Add(turn);
         }
         else if (targetArea == TargetArea.SINGLE)
         {
-            //logic needed in the future
+            // logic needed in the future
         }
         else if (targetArea == TargetArea.RANDOM)
         {
-            //logic needed in the future
+            // logic needed in the future
         }
         else
         {
@@ -497,24 +533,24 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         }
     }
 
-    //check to ensure if we can chain another card and wait for user to play a card that doesnt chain or end their turn
+    // check to ensure if we can chain another card and wait for user to play a card that doesnt chain or end their turn
     void CheckComboChaining()
     {
-        //Well add the chain card's charge duration
+        // Well add the chain card's charge duration
         if (isChainCombo)
         {
             playerController.AddDuration = chargeTime;
             return;
         }
-        //end the users turn and begin charging up for the combo attack
+        // end the users turn and begin charging up for the combo attack
         else
         {
-            //hiding the Combat UI is last (otherwise it wont catch our early return when using comboes in Single and Determine Attack methods
+            // hiding the Combat UI is last (otherwise it wont catch our early return when using comboes in Single and Determine Attack methods
             battleController.HideCombatUI();
             userController.IsUsersTurn = false;
             battleController.PauseSpeedsForAllMonsters(false);
 
-            //Begin charging for player
+            // Begin charging for player
             playerController.monsterState = MonsterController.State.CHARGING;
             playerController.chargeDuration = chargeTime;
             PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();

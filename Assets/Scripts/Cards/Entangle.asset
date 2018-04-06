@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Name: Entangle
   m_EditorClassIdentifier: 
   name: Entangle
-  description: Attacks all enemies for 3 DMG
+  description: Attacks all enemies for 10 DMG
   artwork: {fileID: 21300000, guid: 296022fda35660a4682693dfb8fd2cf8, type: 3}
-  damage: 3
+  damage: 10
+  block: 0
   cost: 2
   charge: 2
   targetArea: 1
   isCanceling: 0
+  chainCombo: 0
+  stunNumberOfTurns: 0

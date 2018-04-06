@@ -12,11 +12,13 @@ MonoBehaviour:
   m_Name: FirstStrike
   m_EditorClassIdentifier: 
   name: First Strike
-  description: Playing this card first will chain it with the next card.
+  description: Deal 2 DMG. Can chain a card after being played.
   artwork: {fileID: 0}
   damage: 2
+  block: 0
   cost: 0
   charge: 0.25
   targetArea: 0
   isCanceling: 0
   chainCombo: 1
+  stunNumberOfTurns: 0

@@ -142,7 +142,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -492,6 +492,7 @@ MonoBehaviour:
   tickImages: []
   monsterMat: {fileID: 0}
   healthTextGameObject: {fileID: 0}
+  blockTextGameObject: {fileID: 0}
   moveSet: []
   done: 0
   isSpeedPaused: 0
@@ -513,16 +514,23 @@ MonoBehaviour:
   chargeTimer: 0
   chargeDuration: 0
   damage: 0
+  block: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
     targetArea: 0
     damage: 0
+    block: 0
     chargeTime: 0
     isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
   actions: []
   targets: []
   combosQueued: 0
+  stunNumberOfTurns: 0
+  stunCheckFinish: 0
+  stunCounter: 0
 --- !u!4 &201673074
 Transform:
   m_ObjectHideFlags: 0
@@ -878,7 +886,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 11
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1067,6 +1075,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 1230910060}
+  - {fileID: 1787356026}
   - {fileID: 27020638}
   - {fileID: 2052878000}
   - {fileID: 755295047}
@@ -1115,7 +1124,7 @@ RectTransform:
   - {fileID: 854628277}
   - {fileID: 2055930599}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 12
+  m_RootOrder: 13
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1498,10 +1507,14 @@ MonoBehaviour:
     targets: []
     targetArea: 0
     damage: 0
+    block: 0
     chargeTime: 0
     isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
   EnemiesInBattle: []
   FriendliesInBattle: []
+  AllInBattle: []
   targets: []
   damage: 0
   newReferenceIndex: 0
@@ -1589,7 +1602,7 @@ RectTransform:
   m_LocalScale: {x: 0.9999998, y: 0.9999998, z: 0.9999998}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -2225,6 +2238,7 @@ MonoBehaviour:
   tickImages: []
   monsterMat: {fileID: 0}
   healthTextGameObject: {fileID: 0}
+  blockTextGameObject: {fileID: 0}
   moveSet: []
   done: 0
   isSpeedPaused: 0
@@ -2246,16 +2260,23 @@ MonoBehaviour:
   chargeTimer: 0
   chargeDuration: 0
   damage: 0
+  block: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
     targetArea: 0
     damage: 0
+    block: 0
     chargeTime: 0
     isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
   actions: []
   targets: []
   combosQueued: 0
+  stunNumberOfTurns: 0
+  stunCheckFinish: 0
+  stunCounter: 0
 --- !u!4 &1265360896
 Transform:
   m_ObjectHideFlags: 0
@@ -2517,6 +2538,7 @@ GameObject:
   - component: {fileID: 1394981725}
   - component: {fileID: 1394981724}
   - component: {fileID: 1394981726}
+  - component: {fileID: 1394981727}
   m_Layer: 5
   m_Name: InfoPanel
   m_TagString: InfoPanel
@@ -2538,7 +2560,7 @@ RectTransform:
   - {fileID: 1749235311}
   - {fileID: 257863572}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 8
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -2598,6 +2620,17 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 2
   m_TargetDisplay: 0
+--- !u!114 &1394981727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1394981722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f86c9a2c970f55b42a0d5906febabe10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1564397726
 GameObject:
   m_ObjectHideFlags: 0
@@ -2890,7 +2923,7 @@ RectTransform:
   m_Children:
   - {fileID: 951088561}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 9
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -3056,6 +3089,94 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1749235310}
+--- !u!1 &1787356025
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 1787356026}
+  - component: {fileID: 1787356030}
+  - component: {fileID: 1787356029}
+  - component: {fileID: 1787356027}
+  m_Layer: 5
+  m_Name: Player Block
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1787356026
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1787356025}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
+  m_Children: []
+  m_Father: {fileID: 443257534}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -343.50006, y: 466.3}
+  m_SizeDelta: {x: 160, y: 30}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1787356027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1787356025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d966b8a0bb1095649b65e947f306db56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  referenceMonster: {fileID: 2012570051}
+  canvasRect: {fileID: 0}
+--- !u!114 &1787356029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1787356025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 708705254, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
+      Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 14
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: 
+--- !u!222 &1787356030
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1787356025}
 --- !u!224 &1807270270 stripped
 RectTransform:
   m_PrefabParentObject: {fileID: 224897698176944026, guid: 322c99f63544b8244b2bd5993f4fdba8,
@@ -3091,7 +3212,7 @@ RectTransform:
   m_Children:
   - {fileID: 1599480582}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 7
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -3587,6 +3708,7 @@ MonoBehaviour:
   tickImages: []
   monsterMat: {fileID: 0}
   healthTextGameObject: {fileID: 0}
+  blockTextGameObject: {fileID: 0}
   moveSet: []
   done: 0
   isSpeedPaused: 0
@@ -3608,16 +3730,23 @@ MonoBehaviour:
   chargeTimer: 0
   chargeDuration: 0
   damage: 0
+  block: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
     targetArea: 0
     damage: 0
+    block: 0
     chargeTime: 0
     isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
   actions: []
   targets: []
   combosQueued: 0
+  stunNumberOfTurns: 0
+  stunCheckFinish: 0
+  stunCounter: 0
 --- !u!1 &2031369063
 GameObject:
   m_ObjectHideFlags: 0
@@ -3647,7 +3776,7 @@ Transform:
   - {fileID: 1807270270}
   - {fileID: 1578458204}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 6
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2031369065
 MonoBehaviour:
@@ -3779,6 +3908,7 @@ MonoBehaviour:
   tickImages: []
   monsterMat: {fileID: 0}
   healthTextGameObject: {fileID: 0}
+  blockTextGameObject: {fileID: 0}
   moveSet: []
   done: 0
   isSpeedPaused: 0
@@ -3800,16 +3930,23 @@ MonoBehaviour:
   chargeTimer: 0
   chargeDuration: 0
   damage: 0
+  block: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
     targetArea: 0
     damage: 0
+    block: 0
     chargeTime: 0
     isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
   actions: []
   targets: []
   combosQueued: 0
+  stunNumberOfTurns: 0
+  stunCheckFinish: 0
+  stunCounter: 0
 --- !u!95 &2042718776
 Animator:
   serializedVersion: 3
@@ -3854,7 +3991,7 @@ RectTransform:
   m_Children:
   - {fileID: 592439738}
   m_Father: {fileID: 443257534}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -3890,7 +4027,7 @@ RectTransform:
   m_LocalScale: {x: 0.9999998, y: 0.9999998, z: 0.9999998}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -4129,7 +4266,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 10
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -4156,7 +4293,7 @@ MonoBehaviour:
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 3d60812e40a6c7742a5817942bd100cd, type: 3}
+    m_Font: {fileID: 12800000, guid: 70e94eb2bd5e955499b04dfba4a3a7ea, type: 3}
     m_FontSize: 100
     m_FontStyle: 0
     m_BestFit: 0
@@ -4215,7 +4352,7 @@ RectTransform:
   m_LocalScale: {x: 0.9999998, y: 0.9999998, z: 0.9999998}
   m_Children: []
   m_Father: {fileID: 443257534}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}

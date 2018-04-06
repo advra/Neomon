@@ -155,6 +155,7 @@ public class PlayerHandController : MonoBehaviour {
                     cardController.name = deck[0].name;
                     cardController.description = deck[0].description;
                     cardController.damageAmount = deck[0].damage;
+                    cardController.block = deck[0].block;
                     cardController.targetArea = deck[0].targetArea;
                     cardController.cost = deck[0].cost;
                     cardController.chargeTime = deck[0].charge;
@@ -320,22 +321,20 @@ public class PlayerHandController : MonoBehaviour {
         graveyard = new List<Card>();
 
         //we can populate more in a seperate class later
-        //Card sliceCard = new Card("Slice", "Melee Attack a Single Enemy", 5, TargetArea.single, "card_slice_5",1, 1f);
-        //Card thrustCard = new Card("Thrust", "Penetrate Enemies within a Line", 2, TargetArea.line, "card_thrust_2",1,1f);
-        //Card entangleCard = new Card("Entangle", "Deal Damage to All Enemies", 3, TargetArea.all, "card_entangle_3",2,1f);
         Card sliceCard = cardDatabase.cards[0];
         Card thrustCard = cardDatabase.cards[1];
         Card entangleCard = cardDatabase.cards[2];
         Card firstStrike = cardDatabase.cards[3];
         Card shortCircuit = cardDatabase.cards[4];
+        Card armorUp = cardDatabase.cards[5];
 
         //add cards
         for (int i = 0; i < 5; i++)
         {
-            //deck.Add(sliceCard);
-            //deck.Add(thrustCard);
-            //deck.Add(firstStrike);
-            deck.Add(shortCircuit);
+            deck.Add(sliceCard);
+            deck.Add(thrustCard);
+            deck.Add(firstStrike);
+            deck.Add(armorUp);
         }
         deck.Add(entangleCard);
 
