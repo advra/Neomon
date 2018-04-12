@@ -10,7 +10,16 @@ public enum TargetArea
     SPLIT,
     LINE,
     SELF,
-    RANDOM             
+    RANDOM,
+    NOT_SET
+}
+
+public enum DrawType
+{
+    NONE,
+    DRAW_NORMAL,
+    DISCARD_NORMAL,
+    RESHUFFLE_HAND
 }
 
 
@@ -36,6 +45,9 @@ public class Card : ScriptableObject {
     //does this card combo with other cards?
     public bool chainCombo;
     //does this card stun if so how many turns?            
-    public int stunNumberOfTurns;   
+    public int stunNumberOfTurns;
+    //does this card draw, discard or reshuffle the entire hand?
+    public DrawType drawType;
+
 }
              

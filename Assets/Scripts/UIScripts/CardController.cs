@@ -26,6 +26,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     Canvas canvas;
     Image cardImage;
     [SerializeField]
+    private int handIndex;
+    [SerializeField]
     Card card;
     Text[] texts;
     Image[] images;
@@ -43,10 +45,9 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public bool isCanceling;
     public bool isChainCombo;
     public int stunNumberOfTurns;
+    public DrawType drawType;
 
     public State state; 
-    [SerializeField]
-    private int handIndex;
     [SerializeField]
     private Vector3 originalPosition;
     public GameObject BattleTextPrefab;
@@ -59,6 +60,28 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     bool resetDisplay;
     [SerializeField]
     bool displayElement;
+
+    public Card InheritPropertiesFrom
+    {
+        set
+        {
+            this.card = value;
+
+            //inherit all properties to the card we just set
+            //setup the card properties
+            this.name = card.name;
+            this.description = card.description;
+            this.damageAmount = card.damage;
+            this.block = card.block;
+            this.targetArea = card.targetArea;
+            this.cost = card.cost;
+            this.chargeTime = card.charge;
+            this.isCanceling = card.isCanceling;
+            this.isChainCombo = card.chainCombo;
+            this.stunNumberOfTurns = card.stunNumberOfTurns;
+            this.drawType = card.drawType;
+        }
+    }
 
     //used if we use this gameobject as a visiual menu display we do not want to have it interact any battle sequence, only display its data
     public bool SetAsDisplayElement
@@ -103,20 +126,17 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
         }
+
+    }
+
+    void SetupCard()
+    {
+
         //used to reference all the text gameobjects
         texts = GetComponentsInChildren<Text>();
         images = GetComponentsInChildren<Image>();
         //Greater is in front. 10 to ensure it is in front of all other GUI.
         canvas.sortingOrder = 2;
-    }
-
-    void Start ()
-    {
-        BattleTextPrefab = Resources.Load<GameObject>("DamageText");
-        if(BattleTextPrefab == null)
-        {
-            Debug.Log("Cannot find textPrefab for card in Resources folder");
-        }
 
         //texts[0].text = cardName;         //this is for the Cost Text which we wont change
         texts[1].text = cost.ToString();
@@ -137,11 +157,9 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             texts[3].fontSize = 20;
         }
 
-
-
         texts[3].text = description;
         //texts[3].text = description;
-        if(targetArea == TargetArea.SINGLE)
+        if (targetArea == TargetArea.SINGLE)
         {
             images[1].sprite = Resources.Load<Sprite>("Sprites/type_single");
         }
@@ -149,6 +167,17 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             images[1].sprite = Resources.Load<Sprite>("Sprites/type_all");
         }
+    }
+
+    void Start ()
+    {
+        BattleTextPrefab = Resources.Load<GameObject>("DamageText");
+        if(BattleTextPrefab == null)
+        {
+            Debug.Log("Cannot find textPrefab for card in Resources folder");
+        }
+
+        SetupCard();
         
     }
 
@@ -261,8 +290,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 DetermineTargets();
             }
 
+            //Does this card draw? If so execute it now
+            CheckInstantDraw();
 
-            // Check if we skip the below or continue to chain
+            // Check if we are combing, if we are not then end the turn and setup status to charging
             CheckComboChaining();
             
 
@@ -282,7 +313,10 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 playerHandController.PlaceCardIn(this.gameObject, playerHandController.graveyard);
 
                 // determine the targets to add to our monsters action queue
-                DetermineTargets();                 
+                DetermineTargets();
+
+                //Does this card draw? If so execute it now
+                CheckInstantDraw();
 
                 // check if we finish chaining cards or continue waiting
                 CheckComboChaining();               
@@ -314,25 +348,6 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         float distCovered = (Time.time - startTime) * speed;
         float fracJourney = distCovered / distance;
         transform.localPosition = Vector3.Lerp(start, end, fracJourney);
-    }
-
-    void FixedUpdate()
-    {
-        // Some weird bug when dragging and droping really quickly occurs
-        switch (state)
-        {
-            case State.NORMAL:
-            case State.RESET:
-                StartCoroutine(AnimateForTime(0.5f));
-                transform.localPosition = Vector2.Lerp(transform.localPosition, originalPosition, Time.deltaTime * 20);
-                ResetCardDisplay();
-                break;
-            //remove this card
-            case State.DESTROY:
-
-                break;
-        }
-
     }
 
     IEnumerator AnimateForTime(float time)
@@ -492,7 +507,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         GameObject targetedMonster = ValidTargetDraggedOn();
         List<GameObject> targets = new List<GameObject>();
         targets.Add(targetedMonster);
-        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
+        HandleTurn turn = new HandleTurn(battleController.player, targets, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns, drawType);
         //battleController.AddTurnToQueue(turn);
         playerController.actions.Add(turn);
     }
@@ -507,21 +522,14 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         {
             // setup and store the event data
             GameObject targetedMonster = ValidTargetDraggedOn();
-            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.EnemiesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns, drawType);
             //battleController.AddTurnToQueue(turn);
             playerController.actions.Add(turn);
         }
         else if (targetArea == TargetArea.SELF)
         {
-            var targets = new List<GameObject>();
-            // setup and store the event data
-            // assuming we block on only one target 
-            HandleTurn turn = new HandleTurn(battleController.player, battleController.FriendliesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns);
+            HandleTurn turn = new HandleTurn(battleController.player, battleController.FriendliesInBattle, targetArea, damageAmount, block, chargeTime, isCanceling, stunNumberOfTurns, drawType);
             playerController.actions.Add(turn);
-        }
-        else if (targetArea == TargetArea.SINGLE)
-        {
-            // logic needed in the future
         }
         else if (targetArea == TargetArea.RANDOM)
         {
@@ -551,11 +559,55 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             battleController.PauseSpeedsForAllMonsters(false);
 
             // Begin charging for player
-            playerController.monsterState = MonsterController.State.CHARGING;
+            //playerController.monsterState = MonsterController.State.CHARGING;
+            playerController.ChangeState(MonsterController.State.CHARGING);
             playerController.chargeDuration = chargeTime;
             PlayerTickController playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             playerTickController.ChangeState(PlayerTickController.GaugeState.CHARGING);
         }
+    }
+
+    void CheckInstantDraw()
+    {
+
+        if (drawType == DrawType.DRAW_NORMAL)
+        {
+            playerHandController.DrawCards(1);
+        }
+        else if (drawType == DrawType.RESHUFFLE_HAND)
+        {
+            //Get current number of cards in hand
+            int currentCardsInHand = playerHandController.NumberOfCardsInHand();
+            Debug.Log("currentCardsInHand: " + currentCardsInHand);
+            playerHandController.DiscardHand();
+            playerHandController.DrawCards(currentCardsInHand);
+        }
+        else
+        {
+
+        }
+
+        //since we organize by an index value we must recompute every time
+        playerHandController.RecomputeHandIndexes();
+    }
+
+    void FixedUpdate()
+    {
+        // Some weird bug when dragging and droping really quickly occurs
+        switch (state)
+        {
+            case State.NORMAL:
+            case State.RESET:
+                StartCoroutine(AnimateForTime(0.5f));
+                transform.localPosition = Vector2.Lerp(transform.localPosition, originalPosition, Time.deltaTime * 20);
+                ResetCardDisplay();
+                break;
+            //remove this card
+            case State.DESTROY:
+
+                break;
+        }
+
     }
 
 }

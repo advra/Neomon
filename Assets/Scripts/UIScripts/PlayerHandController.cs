@@ -14,6 +14,11 @@ public class PlayerHandController : MonoBehaviour {
     public bool isDrawing;
     public bool initialDraw;
 
+    public List<DrawEvent> drawQueue = new List<DrawEvent>();
+    [SerializeField]
+    public State state;
+    public bool drawEvent;
+
     //contains all the cards to refer to
     public CardDatabase cardDatabase;
 
@@ -48,7 +53,14 @@ public class PlayerHandController : MonoBehaviour {
     public int deckLength = 0;
     public int handLength = 0;
     public int graveyardLength = 0;
-    public int cardsInHandLength = 0;
+    public int numberOfCardsInHand = 0;
+
+    //if player can viewOrder via a skill then sort their deck to see what they can draw next
+    public bool viewOrder; 
+
+    //UI
+    public GameObject DeckObject;
+    public GameObject GraveyardObject;
 
     private ChargeText chargeText;
 
@@ -56,6 +68,7 @@ public class PlayerHandController : MonoBehaviour {
     {
         IDLE,
         DRAWING,
+        DRAWING_DONE,
         SELECTING
     }
 
@@ -130,74 +143,90 @@ public class PlayerHandController : MonoBehaviour {
         }
     }
 
-    //Draws One card from Deck to Hand 
-    //Can be changed for more draws later
-    public void Draw(int number)
+    public Vector3 NextCardPosition()
     {
-        for(int i = 0; i < number; i++)
-        {
-            Debug.Log("Drawing card " + i);
-            if (hand.Count != maxHand)
-            {
-                initialDraw = true;
+        return this.transform.position;
+    }
 
-                //draw as normal
-                if (deck.Count != 0)
-                {
-                    //Get the card data from our Deck then pass its attributes to our GameObject in the Hand 
-                    hand.Add(deck[0]);
-                    //create object and copy attributes
-                    GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   //need to apply spacing
-                                                                                               //set this to tag with hand
-                    cardObj.transform.SetParent(this.transform);
-                    //Apply the card attributes we need on the GameObject
-                    CardController cardController = cardObj.GetComponent<CardController>();
-                    cardController.name = deck[0].name;
-                    cardController.description = deck[0].description;
-                    cardController.damageAmount = deck[0].damage;
-                    cardController.block = deck[0].block;
-                    cardController.targetArea = deck[0].targetArea;
-                    cardController.cost = deck[0].cost;
-                    cardController.chargeTime = deck[0].charge;
-                    cardController.isCanceling = deck[0].isCanceling;
-                    cardController.isChainCombo = deck[0].chainCombo;
-                    cardController.stunNumberOfTurns = deck[0].stunNumberOfTurns;
-                    cardController.PlayerHand = this.gameObject;
-                    Image cardImage = cardObj.GetComponent<Image>();
-                    //visually format image
-                    cardInHands.Add(cardObj);
-                    cardController.HandIndex = cardsInHandLength;
-                    FitAllCards();
-                    deck.Remove(deck[0]);
-                    FitAllCards();
-                }
-                //if deck is 0 then
-                else
-                {
-                    //check graveyard
-                    if (graveyard.Count != 0)
-                    {
-                        //shuffle cards from graveyard to the deck
-                        deck = graveyard;
-                        graveyard = new List<Card>();   //use this instead of .Clear
-                        Shuffle(deck);
-                        Draw(1); //Need to double Draw otherwise cards will shuffle but not draw this turn
-                        Debug.Log("Shuffled cards from graveyard back to the deck");
-                    }
-                    //otherwise do nothing
-                    else
-                    {
-                        Debug.Log("Nothing left in Graveyard to shuffle back into the deck");
-                    }
-                }
-            }
-            else
-            {
-                Debug.Log("Cannot draw anymore cards! Max hand limit is reached");
-            }
-            updateCount();
+    public void DrawCards(int total)
+    {
+        if (!isDrawing)
+        {
+            Debug.Log("Error: DrawCard() not explicitely called from SetupHandForPlayer from MonsterController class.");
+            //return;
         }
 
+        //if done drawing then exit
+        if (total == 0)
+        {
+            isDrawing = false;
+            return;
+        }
+
+        Debug.Log(Time.time + " Drawing " + total + "cards");
+
+        if (hand.Count == maxHand)
+        {
+            Debug.Log("Max hand limit reached");
+        }
+
+        //check if our deck is 0 then force shuffle from our graveyard graveyard
+        if(deck.Count == 0 && graveyard.Count != 0)
+        {
+            ShuffleGraveToDeck();
+        }
+
+        //create the card and reorganize how it looks on screen
+        CreateCardObject();
+        FitAllCards();
+
+        total--;
+
+        //continue until we have no more left
+        DrawCards(total);
+    }
+
+    public void AddToDrawQueue(int n)
+    {
+        if(n == 0 )
+        {
+            return;
+        }
+
+        Debug.Log("AddToDrawQueue() index " + n);
+
+        DrawEvent newEvent = new DrawEvent(deck[0]);
+
+        drawQueue.Add(newEvent);
+
+        n--;
+
+        AddToDrawQueue(n);
+
+    }
+
+    void ShuffleGraveToDeck()
+    {
+        deck = graveyard;
+        graveyard = new List<Card>();
+        Shuffle(deck);
+    }
+
+    public int NumberOfCardsInHand()
+    {
+        return cardInHands.Count;
+    }
+
+    public void DiscardHand()
+    {
+        //put all Card objects to discard
+        //destroy all Game Objects
+
+        for(int i = cardInHands.Count - 1; i >= 0 ; i--)
+        {
+            PlaceCardIn(cardInHands[i], graveyard);
+        }
+            
     }
 
     //called when card is used
@@ -214,24 +243,25 @@ public class PlayerHandController : MonoBehaviour {
         {
             Debug.Log("Hand has zero cards to put into target pile!");
         }
-        updateCount();
+        //updateCount();
     }
 
-        public void PlaceCardIn(GameObject thisCard, List<Card> targetPile)
+    //place card via index
+    public void PlaceCardIn(GameObject thisCard, List<Card> targetPile)
     {
         if(hand.Count != 0)
         {
             CardController cardController = thisCard.GetComponent<CardController>();
-            int index = cardController.HandIndex;
-            Debug.Log("Hand index is: " + index);
-            targetPile.Add(hand[index]);
-            hand.Remove(hand[index]);
+            int i = cardController.HandIndex;
+            Debug.Log("Hand index is: " + i);
+            targetPile.Add(hand[i]);
+            hand.Remove(hand[i]);
             //we MUST remove the gameobject from the List BEFORE destroying it
+            //AnimateCard(thisCard, thisCard, GraveyardObject, 1f);
             cardInHands.Remove(thisCard);
             //Note: Can potentially insert some card destroy animation when used here
             StartCoroutine(TimedDeath(thisCard));
             //Recompute Indexes
-            updateCount();
             RecomputeHandIndexes();
             //Update hand Graphics
             FitAllCards();
@@ -240,29 +270,21 @@ public class PlayerHandController : MonoBehaviour {
         {
             Debug.Log("Hand has zero cards to put into target pile!");
         }
-        //updateCount();
+
     }
 
     //loses reference
     public void RecomputeHandIndexes(){
-        for(int i = 0; i < cardsInHandLength; i++)
+        for(int i = 0; i <= cardInHands.Count-1; i++)
         {
             cardInHands[i].GetComponent<CardController>().HandIndex = i;
         }
     }
 
-    public void updateCount()
-    {
-        deckLength = deck.Count;
-        handLength = hand.Count;
-        graveyardLength = graveyard.Count;
-        cardsInHandLength = cardInHands.Count;
-    }
-
     //For "Play" button
     public void Test()
     {
-        Draw(1);
+        //Draw(1);
     }
     //For "Draw" button
     public void Test2()
@@ -277,70 +299,47 @@ public class PlayerHandController : MonoBehaviour {
         GameObject.Destroy(obj);
     }
 
+    void CreateCardObject()
+    {
+        //Get the card data from our Deck then pass its attributes to our GameObject in the Hand 
+        hand.Add(deck[0]);
+
+        //create object and copy attributes
+        //need to apply spacing
+        //set this to tag with hand
+        GameObject cardObj = GameObject.Instantiate(cardPrefab, this.transform);   
+                                                                                   
+        //cardObj.transform.SetParent(this.transform);
+        //Apply the card attributes we need on the GameObject
+        CardController cardController = cardObj.GetComponent<CardController>();
+        cardController.InheritPropertiesFrom = deck[0];
+        cardController.PlayerHand = this.gameObject;
+
+        Image cardImage = cardObj.GetComponent<Image>();
+        //visually format image
+        cardInHands.Add(cardObj);
+        cardController.HandIndex = cardInHands.Count-1;
+        AnimateCard(cardObj, DeckObject, this.gameObject, 1f);
+        FitAllCards();
+        deck.Remove(deck[0]);
+    }
+
     void Awake()
     {
         if(cardDatabase == null)
         {
             cardDatabase = Resources.Load<CardDatabase>("CardDatabase");
         }
-        //if (playerController == null)
-        //{
-        //    playerController = GameObject.FindGameObjectWithTag("Player").GetComponent<MonsterController>();
-        //}
+
         if(chargeText == null)
         {
             chargeText = UIChargeText.GetComponent<ChargeText>();
         }
+
         if(userController == null)
         {
             userController = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<UserController>();
         }
-    }
-
-    // Use this for initialization
-    void Start()
-    {
-        if (BC == null)
-        {
-            BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
-        }
-        
-        if (parentCanvas == null)
-        {
-            parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
-        }
-        
-        if (cardPrefab == null)
-        {
-            cardPrefab = Resources.Load<GameObject>("CardPrefab");
-        }
-
-        cardInHands = new List<GameObject>();
-        deck = new List<Card>();
-        hand = new List<Card>();
-        graveyard = new List<Card>();
-
-        //we can populate more in a seperate class later
-        Card sliceCard = cardDatabase.cards[0];
-        Card thrustCard = cardDatabase.cards[1];
-        Card entangleCard = cardDatabase.cards[2];
-        Card firstStrike = cardDatabase.cards[3];
-        Card shortCircuit = cardDatabase.cards[4];
-        Card armorUp = cardDatabase.cards[5];
-
-        //add cards
-        for (int i = 0; i < 5; i++)
-        {
-            deck.Add(sliceCard);
-            deck.Add(thrustCard);
-            deck.Add(firstStrike);
-            deck.Add(armorUp);
-        }
-        deck.Add(entangleCard);
-
-        Shuffle(deck);
-
-        updateCount();
     }
 
     //user clicks this to end their turn
@@ -402,17 +401,123 @@ public class PlayerHandController : MonoBehaviour {
     //draw cards for first time then 1 card each turn after
     public void SetupHand()
     {
+        state = State.DRAWING;
+    }
+
+    public IEnumerator AnimateCard(GameObject card, GameObject startObj, GameObject endObj, float duration)
+    {
+        float startTime;
+        float totalDistance;
+        Vector3 startPos = startObj.transform.position;
+        Vector3 endPos = endObj.transform.position;
+
+        startTime = Time.time;
+        totalDistance = Vector3.Distance(startPos, endPos);
+        yield return DrawCard(card, startPos, endPos, duration);
+    }
+
+    IEnumerator DrawCard(GameObject card, Vector3 a, Vector3 b, float time)
+    {
+        float i = 0.0f;
+        float rate = 1.0f / time; //* speed;
+        //destination not reached
+        while (i < 1.0f)
+        {
+            i += Time.deltaTime * rate;
+            card.transform.position = Vector3.Lerp(a, b, i);
+            yield return null;
+        }
+        cardInHands.Remove(card);
+    }
+
+    void OnPlayerTurn()
+    {
+        IncrementCostBy(1);
+
         if (!initialDraw)
         {
-            Draw(3);
-            cardCharge = 1;
+            //beginning of the battle, draw 3 cards
+            DrawCards(3);
+            //setup our energy charge numbers
             maxCardCharge = 1;
+            cardCharge = 1;
             chargeText.UpdateCount(cardCharge, maxCardCharge);
+            initialDraw = true;
         }
         else
         {
-            Draw(1);
-            IncrementCostBy(1);
+            DrawCards(1);
         }
+       
+        state = State.SELECTING;
+
+        drawEvent = false;
+    }
+
+    // Use this for initialization
+    void Start()
+    {
+        if (BC == null)
+        {
+            BC = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<BattleController>();
+        }
+
+        if (parentCanvas == null)
+        {
+            parentCanvas = GameObject.FindGameObjectWithTag("Canvas");
+        }
+
+        if (cardPrefab == null)
+        {
+            cardPrefab = Resources.Load<GameObject>("CardPrefab");
+        }
+
+        cardInHands = new List<GameObject>();
+        deck = new List<Card>();
+        hand = new List<Card>();
+        graveyard = new List<Card>();
+
+        //we can populate more in a seperate class later
+        Card sliceCard = cardDatabase.cards[0];
+        Card thrustCard = cardDatabase.cards[1];
+        Card entangleCard = cardDatabase.cards[2];
+        Card firstStrikeCard = cardDatabase.cards[3];
+        Card shortCircuitCard = cardDatabase.cards[4];
+        Card armorUpCard = cardDatabase.cards[5];
+        Card recompileCard = cardDatabase.cards[6];
+        Card reloadCard = cardDatabase.cards[7];
+
+        //add cards
+        for (int i = 0; i < 3; i++)
+        {
+            //deck.Add(sliceCard);
+            //deck.Add(thrustCard);
+            //deck.Add(firstStrikeCard);
+            //deck.Add(shortCircuitCard);
+            //deck.Add(armorUpCard);
+            deck.Add(recompileCard);
+            deck.Add(reloadCard);
+        }
+
+        deck.Add(entangleCard);
+
+        //shuffle our deck
+        Shuffle(deck);
+
+    }
+
+    void Update()
+    {
+        switch (state)
+        {
+            case (State.IDLE):
+                break;
+            case (State.DRAWING):
+                OnPlayerTurn();
+                break;
+            case (State.SELECTING):
+                break;
+        }
+
     }
 }

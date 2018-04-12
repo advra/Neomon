@@ -515,6 +515,17 @@ MonoBehaviour:
   chargeDuration: 0
   damage: 0
   block: 0
+  currentAction:
+    owner: {fileID: 0}
+    targets: []
+    targetArea: 0
+    damage: 0
+    block: 0
+    chargeTime: 0
+    isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
+    drawType: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
@@ -525,6 +536,7 @@ MonoBehaviour:
     isCanceling: 0
     stun: 0
     stunNumberOfTurns: 0
+    drawType: 0
   actions: []
   targets: []
   combosQueued: 0
@@ -1512,6 +1524,7 @@ MonoBehaviour:
     isCanceling: 0
     stun: 0
     stunNumberOfTurns: 0
+    drawType: 0
   EnemiesInBattle: []
   FriendliesInBattle: []
   AllInBattle: []
@@ -2261,6 +2274,17 @@ MonoBehaviour:
   chargeDuration: 0
   damage: 0
   block: 0
+  currentAction:
+    owner: {fileID: 0}
+    targets: []
+    targetArea: 0
+    damage: 0
+    block: 0
+    chargeTime: 0
+    isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
+    drawType: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
@@ -2271,6 +2295,7 @@ MonoBehaviour:
     isCanceling: 0
     stun: 0
     stunNumberOfTurns: 0
+    drawType: 0
   actions: []
   targets: []
   combosQueued: 0
@@ -3259,12 +3284,12 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2031369065}
-        m_MethodName: AddCardToDeck
-        m_Mode: 1
+        m_MethodName: AddToDraw
+        m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 1
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 1
@@ -3731,6 +3756,17 @@ MonoBehaviour:
   chargeDuration: 0
   damage: 0
   block: 0
+  currentAction:
+    owner: {fileID: 0}
+    targets: []
+    targetArea: 0
+    damage: 0
+    block: 0
+    chargeTime: 0
+    isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
+    drawType: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
@@ -3741,6 +3777,7 @@ MonoBehaviour:
     isCanceling: 0
     stun: 0
     stunNumberOfTurns: 0
+    drawType: 0
   actions: []
   targets: []
   combosQueued: 0
@@ -3792,6 +3829,7 @@ MonoBehaviour:
   cardPrefab: {fileID: 0}
   isDrawing: 0
   initialDraw: 0
+  drawQueue: []
   cardDatabase: {fileID: 0}
   deck: []
   hand: []
@@ -3811,7 +3849,10 @@ MonoBehaviour:
   deckLength: 0
   handLength: 0
   graveyardLength: 0
-  cardsInHandLength: 0
+  numberOfCardsInHand: 0
+  viewOrder: 0
+  DeckObject: {fileID: 854628276}
+  GraveyardObject: {fileID: 2055930598}
 --- !u!1 &2042718772
 GameObject:
   m_ObjectHideFlags: 0
@@ -3931,6 +3972,17 @@ MonoBehaviour:
   chargeDuration: 0
   damage: 0
   block: 0
+  currentAction:
+    owner: {fileID: 0}
+    targets: []
+    targetArea: 0
+    damage: 0
+    block: 0
+    chargeTime: 0
+    isCanceling: 0
+    stun: 0
+    stunNumberOfTurns: 0
+    drawType: 0
   previousAction:
     owner: {fileID: 0}
     targets: []
@@ -3941,6 +3993,7 @@ MonoBehaviour:
     isCanceling: 0
     stun: 0
     stunNumberOfTurns: 0
+    drawType: 0
   actions: []
   targets: []
   combosQueued: 0

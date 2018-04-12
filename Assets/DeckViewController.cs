@@ -175,6 +175,12 @@ public class DeckViewController : MonoBehaviour {
         {
             cards = playerHandController.deck;
             texts[0].text = "Viewing Your Deck";
+
+            //order if player can viewOrder
+            //if(playerHandController.viewOrder == false)
+            //{
+            //    //input sorting here
+            //}
         }
 
         if (deckView == DeckList.GRAVE)

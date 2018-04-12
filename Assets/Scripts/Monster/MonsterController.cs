@@ -32,7 +32,7 @@ public class MonsterController : MonoBehaviour
     public enum State
     {
         WAITING,    //waiting until turn
-        READY,      //when monster is ready / drawing cards
+        READY,      //when monster is ready 
         SELECTING,  //is ready now player chooses action
         CHARGING,   //wait time delay needed to perform action
         PERFORMING,
@@ -79,6 +79,8 @@ public class MonsterController : MonoBehaviour
     Text[] panelInfoText;
 
     //used for internal turns
+    [SerializeField]
+    private HandleTurn currentAction;
     public HandleTurn previousAction;
     public List<HandleTurn> actions = new List<HandleTurn>();
     public List<GameObject> targets = new List<GameObject>();
@@ -113,7 +115,10 @@ public class MonsterController : MonoBehaviour
             {
                 playerTickController = GameObject.FindGameObjectWithTag("PlayerTick").GetComponent<PlayerTickController>();
             }
+            playerHand.GetComponent<PlayerHandController>().state = PlayerHandController.State.IDLE;
+
             playerTickController.ChangeState(PlayerTickController.GaugeState.INCREASING);
+
             userController.IsUsersTurn = false;
             BC.HideCombatUI();
         }
@@ -143,7 +148,7 @@ public class MonsterController : MonoBehaviour
         set { currentSpeed = value; }
     }
 
-    void ChangeState(State state)
+    public void ChangeState(State state)
     {
         monsterState = state;
         done = false;
@@ -404,7 +409,7 @@ public class MonsterController : MonoBehaviour
             List<GameObject> target = new List<GameObject>();
             //will always target player unless a buff or heal
             target.Add(BC.player);
-            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, moveSet[random].block, chargeDuration, isCanceling, stunNumberOfTurns);
+            HandleTurn turn = new HandleTurn(this.gameObject, target, moveSet[random].targetArea, moveSet[random].damage, moveSet[random].block, chargeDuration, isCanceling, stunNumberOfTurns, DrawType.NONE);
             //BC.AddTurnToQueue(turn);
             actions.Add(turn);
 
@@ -465,7 +470,8 @@ public class MonsterController : MonoBehaviour
 
         if (chargeTimer >= durationInSeconds) //change back to BC.Threshold for testing
         {
-            ExecuteTurn();
+            monsterState = State.PERFORMING;
+            //ExecuteTurn();
         }
         else
         {
@@ -483,7 +489,7 @@ public class MonsterController : MonoBehaviour
 
     public void ExecuteTurn()
     {
-
+   
         //if we have nothing left exit, otherwise continue combos etc
         if (actions.Count == 0)
         {
@@ -500,12 +506,14 @@ public class MonsterController : MonoBehaviour
         }
 
         previousAction = actions[0];
-        targets = previousAction.targets;
+        currentAction = previousAction;
+        targets = currentAction.targets;
         //this will pause time for us so other monsters dont increment
         BC.MonsterIsAnimating = true;
-        if(previousAction.targetArea == TargetArea.SINGLE)
+
+        if(currentAction.targetArea == TargetArea.SINGLE)
         {
-            StartCoroutine(BC.BeginAttack(previousAction.owner, previousAction.targets[0], 0.5f));
+            StartCoroutine(BC.BeginAttack(currentAction.owner, currentAction.targets[0], 0.5f));
         }
         else
         {
@@ -513,11 +521,17 @@ public class MonsterController : MonoBehaviour
             BC.MonsterIsAnimating = false;
         }
         
+        //Apply effects to player
+        if(currentAction.drawType != DrawType.NONE)
+        {
+            //CheckDraw();
+        }
+
         //Apply effect to targets
         foreach(GameObject target in targets)
         {
             // Attack Canceling?
-            if (previousAction.isCanceling)
+            if (currentAction.isCanceling)
             {
                 MonsterController targetsMonsterController = target.GetComponent<MonsterController>();
                 //we have to make sure the target has an action queued up otherwise just do damage as normal
@@ -530,7 +544,7 @@ public class MonsterController : MonoBehaviour
 
             // Stunning?
             // if we stun enemy add us as the owner otherwise increase the number
-            if(previousAction.stunNumberOfTurns > 0)
+            if(currentAction.stunNumberOfTurns > 0)
             {
                 Stun stun = target.GetComponent<Stun>();
 
@@ -542,21 +556,22 @@ public class MonsterController : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("Stuns found adding " + previousAction.stunNumberOfTurns);
-                    stun.AddTurns(previousAction.stunNumberOfTurns);
+                    Debug.Log("Stuns found adding " + currentAction.stunNumberOfTurns);
+                    stun.AddTurns(currentAction.stunNumberOfTurns);
                 } 
                 
             }
 
-            if(previousAction.block > 0)
+            //Are we increasing this monsters current armor?
+            if(currentAction.block > 0)
             {
                 ApplyBlock();
             }
 
             //Display only if damage was > 0
-            if(previousAction.damage != 0)
+            if(currentAction.damage != 0)
             {
-                target.GetComponent<MonsterController>().Damage(previousAction.damage);
+                target.GetComponent<MonsterController>().Damage(currentAction.damage);
                 // moved text generation to Damage to control what is outputted
                 //BC.SpawnBattleTextAbove(target, previousAction.damage);
             }
@@ -564,13 +579,14 @@ public class MonsterController : MonoBehaviour
         }
 
         actions.RemoveAt(0);
+        currentAction.Clear();
         ExecuteTurn();
     }
 
     void ApplyBlock()
     {
-        this.block += previousAction.block;
-        BC.SpawnBattleTextAboveWithString(this.gameObject, "Gained " + previousAction.block + " Block");
+        this.block += currentAction.block;
+        BC.SpawnBattleTextAboveWithString(this.gameObject, "Gained " + currentAction.block + " Block");
     }
 
     void OnMouseEnter()
@@ -659,8 +675,9 @@ public class MonsterController : MonoBehaviour
 
     void SetupHandForPlayer()
     {
-        if(team == Team.PLAYER)
+        if(team == Team.PLAYER && playerHand.state == PlayerHandController.State.IDLE)
         {
+            playerHand.isDrawing = true;
             playerHand.SetupHand();
             BC.EndTurnButton.SetActive(true);
         }
@@ -763,14 +780,20 @@ public class MonsterController : MonoBehaviour
 
     void Update ()
     {
+        if (done)
+        {
+            return;
+        }
+
         switch (monsterState)
         {
             case (State.WAITING):
                 IncreaseSpeed();
                 break;
             case (State.READY):
+                done = true;
                 SetupHandForPlayer();
-                monsterState = State.SELECTING;
+                ChangeState(State.SELECTING);
                 break;
             case (State.SELECTING):
                 SelectAttack();
@@ -786,8 +809,12 @@ public class MonsterController : MonoBehaviour
             case (State.STUNNED):
                 IncreaseStun();
                 break;
+            case (State.PERFORMING):
+                ExecuteTurn();
+                break;
             default:
                 break;
         }
+
     }
 }

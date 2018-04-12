@@ -18,19 +18,9 @@ public class HandleTurn {
     public bool isCanceling;
     public bool stun;
     public int stunNumberOfTurns;
+    public DrawType drawType;
 
-    //player event constructor
-    //constructor if not specific single attacker
-    //public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, float chargeTime)
-    //{
-    //    this.owner = owner;
-    //    this.targets = target;
-    //    this.targetArea = targetArea;
-    //    this.damage = damage;
-    //    this.chargeTime = chargeTime;
-    //}
-    //for canceling cards and others of special type
-    public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, int block, float chargeTime, bool isCanceling, int stunNumberOfTurns)
+    public HandleTurn(GameObject owner, List<GameObject> target, TargetArea targetArea, int damage, int block, float chargeTime, bool isCanceling, int stunNumberOfTurns, DrawType drawType)
     {
         this.owner = owner;
         this.targets = target;
@@ -40,10 +30,27 @@ public class HandleTurn {
         this.chargeTime = chargeTime;
         this.isCanceling = isCanceling;
         this.stunNumberOfTurns = stunNumberOfTurns;
-        if(stunNumberOfTurns <= 0)
+        if (stunNumberOfTurns <= 0)
         {
             stun = false;
         }
+
+        //these only affects the player
+        this.drawType = drawType;
+    }
+
+    public void Clear()
+    {
+        this.owner = null;
+        this.targets = null;
+        this.targetArea = TargetArea.NOT_SET;
+        this.damage = 0;
+        this.block = 0;
+        this.chargeTime = 0;
+        this.isCanceling = false;
+        this.stunNumberOfTurns = 0;
+        this.stun = false;
+        this.drawType = DrawType.NONE;
     }
 
 }
