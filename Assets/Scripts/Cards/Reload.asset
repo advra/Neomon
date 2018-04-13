@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Name: Reload
   m_EditorClassIdentifier: 
   name: Reload
-  description: Draw one card.
+  description: Draw 1 Card Next Turn
   artwork: {fileID: 0}
   damage: 0
   block: 0
@@ -23,3 +23,5 @@ MonoBehaviour:
   chainCombo: 1
   stunNumberOfTurns: 0
   drawType: 1
+  drawNumber: 1
+  onNextTurn: 1

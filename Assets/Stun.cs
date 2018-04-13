@@ -11,6 +11,9 @@ public class Stun : MonoBehaviour {
     MonsterController.State originalState;
     [SerializeField]
     private GameObject monsterWhoStunned;
+    [SerializeField]
+    private GameObject stunParticlePrefab;
+    private GameObject _stunParticle;
 
     public GameObject Owner
     {
@@ -27,6 +30,7 @@ public class Stun : MonoBehaviour {
         if (turns <= 0)
         {
             GetComponent<MonsterController>().monsterState = originalState;
+            Destroy(_stunParticle);
             Destroy(GetComponent<Stun>());
         }
     }
@@ -50,5 +54,8 @@ public class Stun : MonoBehaviour {
         mc.monsterState = MonsterController.State.STUNNED;
         //by default turns are 1 but can use Set turn
         turns = 1;
+        stunParticlePrefab = Resources.Load<GameObject>("Particles/StunRootParticle");
+        _stunParticle = Instantiate(stunParticlePrefab, this.transform);
+        _stunParticle.transform.localPosition = new Vector3(0, 1, 0);
     }
 }

@@ -3284,7 +3284,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2031369065}
-        m_MethodName: AddToDraw
+        m_MethodName: DrawCards
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3830,6 +3830,8 @@ MonoBehaviour:
   isDrawing: 0
   initialDraw: 0
   drawQueue: []
+  state: 0
+  drawEvent: 0
   cardDatabase: {fileID: 0}
   deck: []
   hand: []

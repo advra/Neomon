@@ -72,6 +72,21 @@ public class PlayerHandController : MonoBehaviour {
         SELECTING
     }
 
+    //drawing properties on players turn
+    //number of cards to draw at the beginning of battle, can change by default is 3
+    private int beginningDrawNumberOfCards = 3;
+    private int numberCardsToDrawEachTurn = 1;
+    private int queuedCardDraw = 0;
+
+    //called if a card is used and player waits until the players next turn
+    public int DrawAdditionalCardsNextTurn
+    {
+        set
+        {
+            queuedCardDraw = value;
+        }
+    }
+
     public void AddCardToDeck()
     {
         deck.Add(cardDatabase.cards[3]);
@@ -436,8 +451,8 @@ public class PlayerHandController : MonoBehaviour {
 
         if (!initialDraw)
         {
-            //beginning of the battle, draw 3 cards
-            DrawCards(3);
+            //beginning of the battle, draw x cards
+            DrawCards(beginningDrawNumberOfCards);
             //setup our energy charge numbers
             maxCardCharge = 1;
             cardCharge = 1;
@@ -446,7 +461,10 @@ public class PlayerHandController : MonoBehaviour {
         }
         else
         {
-            DrawCards(1);
+            //draw x cards each turn and an extra or less
+            DrawCards(numberCardsToDrawEachTurn + queuedCardDraw);
+            //when done reset the number of cards to draw next turn
+            queuedCardDraw = 0;
         }
        
         state = State.SELECTING;
@@ -490,11 +508,11 @@ public class PlayerHandController : MonoBehaviour {
         //add cards
         for (int i = 0; i < 3; i++)
         {
-            //deck.Add(sliceCard);
-            //deck.Add(thrustCard);
-            //deck.Add(firstStrikeCard);
-            //deck.Add(shortCircuitCard);
-            //deck.Add(armorUpCard);
+            deck.Add(sliceCard);
+            deck.Add(thrustCard);
+            deck.Add(firstStrikeCard);
+            deck.Add(shortCircuitCard);
+            deck.Add(armorUpCard);
             deck.Add(recompileCard);
             deck.Add(reloadCard);
         }

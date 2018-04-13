@@ -48,6 +48,10 @@ public class Card : ScriptableObject {
     public int stunNumberOfTurns;
     //does this card draw, discard or reshuffle the entire hand?
     public DrawType drawType;
+    //how many cards does this card draw?
+    public int drawNumber;
+    //is this instant or wait until next turn? for drawing cards or other stuff
+    public bool onNextTurn;
 
 }
              

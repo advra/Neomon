@@ -46,6 +46,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
     public bool isChainCombo;
     public int stunNumberOfTurns;
     public DrawType drawType;
+    public int drawNumber;
+    public bool onNextTurn;
 
     public State state; 
     [SerializeField]
@@ -80,6 +82,8 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
             this.isChainCombo = card.chainCombo;
             this.stunNumberOfTurns = card.stunNumberOfTurns;
             this.drawType = card.drawType;
+            this.drawNumber = card.drawNumber;
+            this.onNextTurn = card.onNextTurn;
         }
     }
 
@@ -290,8 +294,9 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
                 DetermineTargets();
             }
 
-            //Does this card draw? If so execute it now
+            //Does this card draw? If so wait next turn or instantly?
             CheckInstantDraw();
+            
 
             // Check if we are combing, if we are not then end the turn and setup status to charging
             CheckComboChaining();
@@ -569,6 +574,12 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     void CheckInstantDraw()
     {
+        //do we wait until next turn?
+        if(onNextTurn && drawNumber != 0)
+        {
+            playerHandController.DrawAdditionalCardsNextTurn = drawNumber;
+            return;
+        }
 
         if (drawType == DrawType.DRAW_NORMAL)
         {
@@ -597,6 +608,7 @@ public class CardController : MonoBehaviour, IDragHandler, IEndDragHandler {
         switch (state)
         {
             case State.NORMAL:
+                break;
             case State.RESET:
                 StartCoroutine(AnimateForTime(0.5f));
                 transform.localPosition = Vector2.Lerp(transform.localPosition, originalPosition, Time.deltaTime * 20);
