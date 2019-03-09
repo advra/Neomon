@@ -10,3 +10,4 @@ Temp
 *.userprefs
 *.v12.suo
 obj
+/out
